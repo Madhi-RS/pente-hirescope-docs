@@ -1,0 +1,1128 @@
+// ============================================================
+// Pente Partner Platform — Full Database Schema
+// DBML format for dbdiagram.io
+// Last Updated: 2026-07-17
+//
+// TWO SEPARATE DATABASES — not shared:
+//   Admin DB (pente_admin_db)   — owned by Pente_PenteAffiliate_Admin_Be
+//   Portal DB (pente_portal_db)  — owned by Pente_PenteAffiliate_Portal_Be
+//
+// Cross-service data access goes through REST APIs, never direct DB queries.
+// Each backend runs its own TypeORM migrations independently.
+// ============================================================
+
+// ============================================================
+// DATABASE 1: pente_admin_db (Admin Backend)
+// ============================================================
+
+// ============================================================
+// SECTION 1: PENTE INTERNAL — Admin DB
+// ============================================================
+
+Table admins {
+  id uuid [pk, default: `gen_random_uuid()`]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  email varchar(255) [not null, unique]
+  phone varchar(30)
+  avatar_url varchar(500)
+  role admin_role [not null, note: 'SUPER_ADMIN | PENTE_STAFF']
+  department varchar(50) [note: 'Sales | QA | Support | Finance | Operations | Website']
+  status admin_status [not null, default: 'ACTIVE', note: 'ACTIVE | SUSPENDED | DEACTIVATED']
+  keycloak_id varchar(36) [not null, note: 'Keycloak user ID — all credentials managed by Keycloak']
+  last_login_at timestamp
+  suspended_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    email [unique]
+    role
+    status
+    keycloak_id
+  }
+}
+
+// ============================================================
+// SECTION 2: AFFILIATES (ALL SELLERS) — Admin DB (read by Portal via API)
+// ============================================================
+
+Table affiliates {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  slug varchar(100) [not null, unique]
+  email varchar(255) [not null]
+  phone varchar(30)
+  type affiliate_type [not null, note: 'PENTE_AFFILIATE | PARTNER | PARTNER_AFFILIATE']
+  parent_affiliate_id uuid [ref: > affiliates.id, note: 'NULL for PENTE_AFFILIATE and PARTNER. Set for PARTNER_AFFILIATE.']
+  country varchar(2) [default: 'US']
+  timezone varchar(100) [default: 'America/Chicago']
+  white_label_enabled boolean [not null, default: false, note: 'TRUE only for PARTNER']
+
+  // Status & lifecycle
+  status affiliate_status [not null, default: 'PENDING', note: 'PENDING | INVITED | ACTIVE | SUSPENDED | DELETED | EXPIRED']
+
+  // Auth
+  keycloak_id varchar(36)
+  // Invitation
+  invitation_token_hash varchar(128)
+  invitation_token_expires_at timestamp
+  invited_at timestamp
+
+  // Application
+  application_data jsonb [note: 'Original application form data']
+  reviewed_by uuid [ref: > admins.id]
+  reviewed_at timestamp
+  rejection_reason varchar(500)
+
+  // Commission rates (per-affiliate, individually set by admin)
+  commission_rate decimal(5,2) [default: 10.00, note: 'Percentage — e.g., 15.00 = 15%']
+  override_commission_rate decimal(5,2) [default: 2.00, note: 'Percentage — PARTNER only. Earned on sub-affiliate commissions.']
+
+  // Timestamps
+  suspended_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    slug [unique]
+    email
+    type
+    status
+    parent_affiliate_id
+    keycloak_id
+  }
+}
+
+// ============================================================
+// SECTION 3: BRANDING & LANDING PAGE — Admin DB (branding endpoint serves Portal)
+// ============================================================
+
+Table branding_configs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, unique, ref: > affiliates.id, note: 'CASCADE on delete']
+  logo_url varchar(500)
+  primary_color varchar(7) [default: '#1A1A2E']
+  secondary_color varchar(7) [default: '#16213E']
+  accent_color varchar(7) [default: '#E94560']
+  heading_font varchar(100) [default: 'Inter']
+  body_font varchar(100) [default: 'Inter']
+  company_name varchar(255)
+  custom_domain varchar(255)
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id [unique]
+  }
+}
+
+Table landing_pages {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, unique, ref: > affiliates.id, note: 'CASCADE on delete']
+  is_published boolean [not null, default: false]
+  hero_headline varchar(100) [not null, default: 'Get a Professional Website for Your Business']
+  hero_subtext varchar(300) [not null, default: '[Company Name] partners with Pente to deliver stunning websites.']
+  cta_text varchar(50) [not null, default: 'Get Started']
+  cta_link varchar(255) [not null, default: '#apply']
+  feature_cards jsonb [not null, note: 'Array of {title, description, icon}. Max 4.']
+  about_text text
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id [unique]
+  }
+}
+
+// ============================================================
+// SECTION 4: PRODUCTS & PRICING — Admin DB (read by Portal via API)
+// ============================================================
+
+Table products {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  description text
+  features jsonb [note: 'Array of feature strings']
+  base_price decimal(10,2) [not null]
+  category product_category [not null, note: 'website | chatbot | bundle | other']
+  is_active boolean [not null, default: true]
+  created_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    category
+    is_active
+  }
+}
+
+Table product_tiers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  product_id uuid [not null, ref: > products.id]
+  name varchar(100) [not null, note: 'e.g., Basic, Pro, Enterprise']
+  price decimal(10,2) [not null]
+  features jsonb [note: 'Tier-specific feature strings']
+  "order" integer [not null, default: 0]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    product_id
+  }
+}
+
+// ============================================================
+// SECTION 5: COMMISSION PAYOUTS — Admin DB (payouts managed by admin)
+// ============================================================
+
+Table commission_payouts {
+  id uuid [pk, default: `gen_random_uuid()`]
+  payment_reference varchar(100)
+  notes text
+  total_amount decimal(10,2) [not null]
+  commission_count integer [not null]
+  paid_by uuid [not null, ref: > admins.id]
+  paid_at timestamp [not null, default: `NOW()`]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    paid_at
+  }
+}
+
+Table commission_payout_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  payout_id uuid [not null, ref: > commission_payouts.id]
+  commission_id uuid [not null, ref: > commission_records.id]
+
+  indexes {
+    (payout_id, commission_id) [unique]
+  }
+}
+
+// ============================================================
+// DATABASE 2: pente_portal_db (Portal Backend)
+// ============================================================
+
+// SECTION 6: PROSPECTS — Portal DB
+// ============================================================
+
+Table prospects {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  assigned_to uuid [ref: > affiliates.id, note: 'The affiliate working this prospect']
+  company_name varchar(255) [not null]
+  website varchar(500)
+  industry varchar(100)
+  location varchar(255)
+  notes text
+  status prospect_status [not null, default: 'NEW', note: 'NEW | RESEARCHED | CONTACTED | CONVERTED | DISQUALIFIED']
+  converted_to_lead_id uuid [ref: > leads.id, note: 'Set when converted to a Lead']
+  disqualify_reason varchar(50) [note: 'wrong_industry | too_small | already_has_site | not_interested | no_budget | other']
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id
+    assigned_to
+    status
+    converted_to_lead_id
+  }
+}
+
+Table prospect_contacts {
+  id uuid [pk, default: `gen_random_uuid()`]
+  prospect_id uuid [not null, ref: > prospects.id]
+  method contact_method [not null, note: 'CALL | EMAIL | IN_PERSON | OTHER']
+  contact_person varchar(255)
+  notes text
+  contacted_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    prospect_id
+  }
+}
+
+Table prospect_notes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  prospect_id uuid [not null, ref: > prospects.id]
+  content text [not null]
+  actor_id uuid [not null, note: 'affiliates.id']
+  actor_type actor_type [not null, note: 'AFFILIATE']
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    prospect_id
+    created_at
+  }
+}
+
+// ============================================================
+// SECTION 7: LEADS — Portal DB
+// ============================================================
+
+Table leads {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  prospect_id uuid [ref: > prospects.id, note: 'If converted from a prospect']
+  client_id uuid [ref: > clients.id, note: 'Set when lead is WON']
+  assigned_to uuid [ref: > affiliates.id, note: 'The affiliate working this lead']
+  company_name varchar(255) [not null]
+  contact_name varchar(255)
+  email varchar(255)
+  phone varchar(30)
+  source lead_source [note: 'referral | website | social | direct | other']
+  notes text
+  deal_value decimal(10,2) [note: 'Set when lead moves to OPPORTUNITY']
+  stage lead_stage [not null, default: 'NEW', note: 'NEW | CONTACTED | QUALIFIED | SUBMITTED_TO_PENTE | PENTE_REVIEWING | ACCEPTED | REJECTED | DEMO_GIVEN | WON | LOST']
+  lost_reason varchar(50) [note: 'price | competitor | timeline | not_ready | other | self_drop | conflict']
+  lost_notes text
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id
+    prospect_id
+    client_id
+    assigned_to
+    email
+    stage
+  }
+}
+
+Table lead_activities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  lead_id uuid [not null, ref: > leads.id]
+  type activity_type [not null, note: 'STAGE_CHANGE | NOTE_ADDED | ASSIGNED | WON | LOST']
+  description text
+  actor_id uuid [not null, note: 'admins.id or affiliates.id depending on actor_type']
+  actor_type actor_type [not null, note: 'ADMIN | AFFILIATE']
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    lead_id
+    created_at
+  }
+}
+
+// ============================================================
+// SECTION 8: CLIENTS & CONTACTS — Portal DB
+// ============================================================
+
+Table clients {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  lead_id uuid [ref: > leads.id, note: 'The lead that became this client']
+  company_name varchar(255) [not null]
+  address text
+  status client_status [not null, default: 'ONBOARDING', note: 'ONBOARDING | REVIEW | WON | LOST | SUSPENDED']
+  recurring_services_enabled boolean [not null, default: false, note: 'Staff toggle for residual monthly commissions (PENTE-STORY-018)']
+  recurring_services_started_at timestamp [note: 'Activation timestamp; generator only creates rows for months after this']
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id
+    lead_id
+  }
+}
+
+Table client_contacts {
+  id uuid [pk, default: `gen_random_uuid()`]
+  client_id uuid [not null, ref: > clients.id]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  role varchar(50) [note: 'CEO | Marketing Manager | IT Manager | Sales | Finance | Accounts Payable | Other']
+  email varchar(255)
+  phone varchar(30)
+  department varchar(100)
+  notes text
+  is_primary boolean [not null, default: false, note: 'Only one primary per client']
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    client_id
+    is_primary
+  }
+}
+
+Table client_notes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  client_id uuid [not null, ref: > clients.id]
+  content text [not null]
+  actor_id uuid [not null, note: 'admins.id or affiliates.id depending on actor_type']
+  actor_type actor_type [not null, note: 'ADMIN | AFFILIATE']
+  is_deleted boolean [not null, default: false]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    client_id
+    created_at
+  }
+}
+
+Table client_activities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  client_id uuid [not null, ref: > clients.id]
+  type client_activity_type [not null, note: 'CALL | EMAIL | MEETING | OTHER | SYSTEM']
+  description text
+  actor_id uuid [not null, note: 'admins.id or affiliates.id depending on actor_type']
+  actor_type actor_type [not null, note: 'ADMIN | AFFILIATE']
+  activity_date date [not null, default: `CURRENT_DATE`]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    client_id
+    activity_date
+  }
+}
+
+// ============================================================
+// SECTION 9: COMMISSIONS — Portal DB (records) + Admin DB (payouts)
+// ============================================================
+
+Table commission_records {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id, note: 'Who earned this commission']
+  lead_id uuid [ref: > leads.id]
+  client_id uuid [ref: > clients.id]
+  proposal_id uuid [ref: > proposals.id]
+  deal_value decimal(10,2) [not null]
+  commission_rate decimal(5,2) [not null, note: 'Rate at the time the deal was won']
+  commission_amount decimal(10,2) [not null]
+  type commission_type [not null, note: 'DIRECT | OVERRIDE']
+  source_event varchar(20) [not null, default: 'LeadWon', note: "'LeadWon' | 'LeadWon_Override' | 'Recurring'"]
+  billing_period varchar(7) [note: "'YYYY-MM' for Recurring rows; NULL for one-time commissions"]
+  parent_commission_id uuid [ref: > commission_records.id, note: 'For OVERRIDE: references the DIRECT commission']
+  status commission_status [not null, default: 'EARNED', note: 'EARNED | APPROVED | PAID | DISPUTED']
+  dispute_reason text [note: 'Required when status = DISPUTED. Max 1000 chars.']
+  disputed_at timestamp [note: 'Set when status changes to DISPUTED']
+  earned_at timestamp [not null, default: `NOW()`]
+  approved_at timestamp
+  paid_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id
+    lead_id
+    client_id
+    proposal_id
+    type
+    status
+    earned_at
+    parent_commission_id
+    (client_id, billing_period) [unique, name: 'uq_commission_records_recurring_period', note: "Partial: WHERE source_event = 'Recurring' — one Recurring row per client per period"]
+  }
+}
+
+// ============================================================
+// SECTION 10: PROPOSALS — Portal DB
+// ============================================================
+
+Table proposals {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  lead_id uuid [not null, ref: > leads.id]
+  questionnaire_response_id uuid [ref: > questionnaire_responses.id, note: 'Optional — link to filled questionnaire']
+  status proposal_status [not null, default: 'DRAFT', note: 'DRAFT | SENT | VIEWED | ACCEPTED | REJECTED']
+  discount_percent decimal(5,2)
+  discount_amount decimal(10,2)
+  subtotal decimal(10,2) [not null, default: 0]
+  total decimal(10,2) [not null, default: 0]
+  notes text
+  timeline varchar(255)
+  terms text
+  token_hash varchar(128) [unique, note: 'SHA-256 hash of public access token. Raw token only sent in email.']
+  token_expires_at timestamp [note: 'sent_at + 90 days']
+  sent_at timestamp
+  viewed_at timestamp
+  accepted_at timestamp
+  rejected_at timestamp
+  rejection_reason text
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    affiliate_id
+    lead_id
+    status
+    token_hash [unique]
+  }
+}
+
+Table proposal_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  proposal_id uuid [not null, ref: > proposals.id]
+  product_id uuid [ref: > products.id]
+  tier_id uuid [ref: > product_tiers.id]
+  type proposal_item_type [not null, default: 'PRODUCT', note: 'PRODUCT | CUSTOM']
+  description varchar(500)
+  unit_price decimal(10,2) [not null]
+  quantity integer [not null, default: 1]
+  line_total decimal(10,2) [not null]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    proposal_id
+  }
+}
+
+// ============================================================
+// SECTION 11: WEBSITE QUESTIONNAIRE — Admin DB (templates) + Portal DB (responses)
+// ============================================================
+
+Table questionnaire_templates {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  description text
+  is_active boolean [not null, default: true]
+  is_default boolean [not null, default: false]
+  created_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    is_default
+  }
+}
+
+Table questionnaire_sections {
+  id uuid [pk, default: `gen_random_uuid()`]
+  template_id uuid [not null, ref: > questionnaire_templates.id]
+  title varchar(255) [not null]
+  description text
+  "order" integer [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    template_id
+  }
+}
+
+Table questionnaire_questions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  section_id uuid [not null, ref: > questionnaire_sections.id]
+  label varchar(500) [not null]
+  type question_type [not null, note: 'TEXT | TEXTAREA | SELECT | MULTI_SELECT | FILE_UPLOAD']
+  options jsonb [note: 'Array of option strings for SELECT / MULTI_SELECT']
+  required boolean [not null, default: false]
+  help_text varchar(500)
+  "order" integer [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    section_id
+  }
+}
+
+Table questionnaire_responses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  template_id uuid [not null, ref: > questionnaire_templates.id]
+  lead_id uuid [not null, ref: > leads.id]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  client_id uuid [ref: > clients.id]
+  status response_status [not null, default: 'SENT', note: 'SENT | IN_PROGRESS | SUBMITTED']
+  token_hash varchar(128) [unique, note: 'SHA-256 hash of public access token. Raw token only sent in email.']
+  token_expires_at timestamp [note: 'sent_at + 90 days']
+  filled_by filled_by_type [note: 'CLIENT | AFFILIATE — who submitted']
+  sent_at timestamp [not null, default: `NOW()`]
+  submitted_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    lead_id
+    affiliate_id
+    token_hash [unique]
+    status
+  }
+}
+
+Table questionnaire_answers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  response_id uuid [not null, ref: > questionnaire_responses.id]
+  question_id uuid [not null, ref: > questionnaire_questions.id]
+  value jsonb [note: 'Text string for TEXT/TEXTAREA/SELECT, array for MULTI_SELECT, S3 URL for FILE_UPLOAD']
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (response_id, question_id) [unique]
+  }
+}
+
+// ============================================================
+// SECTION 12: LEARNING CENTRE — Admin DB (courses) + Portal DB (enrollments)
+// ============================================================
+
+Table courses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  description text
+  thumbnail_url varchar(500)
+  is_published boolean [not null, default: false]
+  created_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+  deleted_at timestamp
+
+  indexes {
+    is_published
+  }
+}
+
+Table course_lessons {
+  id uuid [pk, default: `gen_random_uuid()`]
+  course_id uuid [not null, ref: > courses.id]
+  title varchar(255) [not null]
+  description text
+  video_url varchar(500) [not null]
+  duration_minutes integer
+  "order" integer [not null, default: 0]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (course_id, "order")
+  }
+}
+
+Table course_enrollments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  course_id uuid [not null, ref: > courses.id]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  status enrollment_status [not null, default: 'ENROLLED', note: 'ENROLLED | COMPLETED']
+  progress_percentage integer [not null, default: 0]
+  enrolled_at timestamp [not null, default: `NOW()`]
+  completed_at timestamp
+
+  indexes {
+    (course_id, affiliate_id) [unique]
+    affiliate_id
+  }
+}
+
+Table lesson_completions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  enrollment_id uuid [not null, ref: > course_enrollments.id]
+  lesson_id uuid [not null, ref: > course_lessons.id]
+  completed_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (enrollment_id, lesson_id) [unique]
+  }
+}
+
+// ============================================================
+// SECTION 13: MARKETING KIT — Admin DB (assets) + Portal DB (downloads)
+// ============================================================
+
+Table marketing_assets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  description text
+  category asset_category [not null, note: 'brochure | presentation | email_template | social_media | case_study | pricing | video | other']
+  file_url varchar(500) [not null]
+  file_type varchar(10) [not null]
+  file_size_bytes bigint [not null]
+  is_co_brandable boolean [not null, default: false]
+  is_published boolean [not null, default: false]
+  uploaded_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+  deleted_at timestamp
+
+  indexes {
+    category
+    is_published
+  }
+}
+
+Table marketing_asset_downloads {
+  id uuid [pk, default: `gen_random_uuid()`]
+  asset_id uuid [not null, ref: > marketing_assets.id]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  downloaded_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    asset_id
+    affiliate_id
+  }
+}
+
+// ============================================================
+// SECTION 14: NOTIFICATIONS — Admin DB (templates) + Portal DB (notifications, preferences)
+// ============================================================
+
+Table notification_templates {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(100) [not null, unique, note: 'e.g., application_approved, lead_won, commission_earned']
+  subject varchar(255) [not null]
+  body_html text [not null]
+  body_text text
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    code [unique]
+  }
+}
+
+Table notifications {
+  id uuid [pk, default: `gen_random_uuid()`]
+  recipient_type recipient_type [not null, note: 'ADMIN | AFFILIATE']
+  recipient_id uuid [not null, note: 'admins.id or affiliates.id depending on recipient_type']
+  template_code varchar(100)
+  title varchar(255) [not null]
+  body text [not null]
+  action_url varchar(500)
+  is_read boolean [not null, default: false]
+  read_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (recipient_type, recipient_id)
+    is_read
+    created_at
+  }
+}
+
+Table notification_preferences {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_type recipient_type [not null, note: 'ADMIN | AFFILIATE']
+  user_id uuid [not null, note: 'admins.id or affiliates.id depending on user_type']
+  event_code varchar(100) [not null, note: 'e.g., lead_won, commission_earned, application_approved']
+  email_enabled boolean [not null, default: true]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (user_type, user_id)
+    (user_type, user_id, event_code) [unique]
+  }
+}
+
+// ============================================================
+// SECTION 15: SUPPORT — Admin DB (KB, FAQs, release notes) + Portal DB (tickets, replies)
+// ============================================================
+
+Table support_tickets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  subject varchar(255) [not null]
+  description text [not null]
+  category varchar(20) [not null, note: 'TECHNICAL | PLATFORM | PENTE_PROCESS | PARTNER | BRAND | PARTNER_PROCESS | PARTNER_DEAL']
+  queue varchar(100) [not null, default: 'PENTE', note: 'PENTE or partner_slug']
+  status ticket_status [not null, default: 'OPEN', note: 'OPEN | IN_PROGRESS | RESOLVED | CLOSED']
+  priority ticket_priority [default: 'MEDIUM', note: 'LOW | MEDIUM | HIGH | URGENT']
+  assigned_to uuid [ref: > admins.id]
+  forwarded_from varchar(100) [note: 'PENTE or partner_slug — previous queue']
+  forwarded_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+  resolved_at timestamp
+  closed_at timestamp
+
+  indexes {
+    affiliate_id
+    status
+    assigned_to
+    queue
+  }
+}
+
+Table support_ticket_replies {
+  id uuid [pk, default: `gen_random_uuid()`]
+  ticket_id uuid [not null, ref: > support_tickets.id]
+  body text [not null]
+  author_type ticket_author_type [not null, note: 'ADMIN | AFFILIATE']
+  author_id uuid [not null]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    ticket_id
+  }
+}
+
+Table knowledge_base_articles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  content text [not null]
+  category varchar(100)
+  is_published boolean [not null, default: false]
+  created_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+  deleted_at timestamp
+
+  indexes {
+    is_published
+  }
+}
+
+Table faqs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  question varchar(500) [not null]
+  answer text [not null]
+  "order" integer [not null, default: 0]
+  is_published boolean [not null, default: true]
+}
+
+Table release_notes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  body text [not null]
+  version varchar(20)
+  created_at timestamp [not null, default: `NOW()`]
+}
+
+// ============================================================
+// SECTION 16: WEBSITE DELIVERY — Admin DB
+// ============================================================
+
+Table website_orders {
+  id uuid [pk, default: `gen_random_uuid()`]
+  proposal_id uuid [ref: > proposals.id]
+  client_id uuid [not null, ref: > clients.id]
+  affiliate_id uuid [not null, ref: > affiliates.id]
+  status order_status [not null, default: 'PENDING', note: 'PENDING | IN_PROGRESS | COMPLETED | CANCELLED']
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    proposal_id
+    client_id
+    affiliate_id
+  }
+}
+
+Table website_projects {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [ref: > website_orders.id]
+  client_id uuid [not null, ref: > clients.id]
+  name varchar(255) [not null]
+  status project_status [not null, default: 'PLANNING', note: 'PLANNING | DESIGN | DEVELOPMENT | QA | CLIENT_REVIEW | GO_LIVE | COMPLETED']
+  pentesites_project_id varchar(100) [note: 'External reference to Pentesites Builder']
+  started_at timestamp
+  estimated_completion timestamp [note: 'Estimated go-live date shown to affiliate']
+  completed_at timestamp
+  created_at timestamp [not null, default: `NOW()`]
+  updated_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    client_id
+    status
+  }
+}
+
+Table website_project_statuses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_id uuid [not null, ref: > website_projects.id]
+  status project_status [not null]
+  notes text
+  changed_by uuid [ref: > admins.id]
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    project_id
+  }
+}
+
+Table qa_checklist_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_id uuid [not null, ref: > website_projects.id]
+  title varchar(255) [not null]
+  description text
+  is_completed boolean [not null, default: false]
+  completed_at timestamp
+  "order" integer [not null, default: 0]
+}
+
+// ============================================================
+// SECTION 17: AUDIT & COMPLIANCE — Both DBs
+// ============================================================
+
+Table audit_logs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  actor_id uuid [not null, note: 'admins.id or affiliates.id']
+  actor_type actor_type [not null, note: 'ADMIN | AFFILIATE']
+  action varchar(50) [not null, note: 'e.g., AFFILIATE_CREATED, LEAD_WON, COMMISSION_PAID']
+  resource_type varchar(50) [not null, note: 'e.g., affiliate, lead, client, commission']
+  resource_id uuid [not null]
+  old_value jsonb
+  new_value jsonb
+  metadata jsonb
+  created_at timestamp [not null, default: `NOW()`]
+
+  indexes {
+    (resource_type, resource_id)
+    actor_id
+    created_at
+  }
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+Enum admin_role {
+  SUPER_ADMIN
+  PENTE_STAFF
+}
+
+Enum admin_status {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+Enum affiliate_type {
+  PENTE_AFFILIATE
+  PARTNER
+  PARTNER_AFFILIATE
+}
+
+Enum affiliate_status {
+  PENDING
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DELETED
+  EXPIRED
+}
+
+Enum prospect_status {
+  NEW
+  RESEARCHED
+  CONTACTED
+  CONVERTED
+  DISQUALIFIED
+}
+
+Enum contact_method {
+  CALL
+  EMAIL
+  IN_PERSON
+  OTHER
+}
+
+Enum lead_stage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  SUBMITTED_TO_PENTE
+  PENTE_REVIEWING
+  ACCEPTED
+  REJECTED
+  DEMO_GIVEN
+  WON
+  LOST
+}
+
+Enum client_status {
+  ONBOARDING
+  REVIEW
+  WON
+  LOST
+  SUSPENDED
+}
+
+Enum lead_source {
+  referral
+  website
+  social
+  direct
+  other
+}
+
+Enum client_activity_type {
+  CALL
+  EMAIL
+  MEETING
+  OTHER
+  SYSTEM
+}
+
+Enum commission_type {
+  DIRECT
+  OVERRIDE
+}
+
+Enum commission_status {
+  EARNED
+  APPROVED
+  PAID
+  DISPUTED
+}
+
+Enum product_category {
+  website
+  chatbot
+  bundle
+  other
+}
+
+Enum proposal_status {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+}
+
+Enum proposal_item_type {
+  PRODUCT
+  CUSTOM
+}
+
+Enum question_type {
+  TEXT
+  TEXTAREA
+  SELECT
+  MULTI_SELECT
+  FILE_UPLOAD
+}
+
+Enum response_status {
+  SENT
+  IN_PROGRESS
+  SUBMITTED
+}
+
+Enum filled_by_type {
+  CLIENT
+  AFFILIATE
+}
+
+Enum enrollment_status {
+  ENROLLED
+  COMPLETED
+}
+
+Enum asset_category {
+  brochure
+  presentation
+  email_template
+  social_media
+  case_study
+  pricing
+  video
+  other
+}
+
+Enum recipient_type {
+  ADMIN
+  AFFILIATE
+}
+
+Enum ticket_status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+Enum ticket_priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+Enum ticket_author_type {
+  ADMIN
+  AFFILIATE
+}
+
+Enum order_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+Enum project_status {
+  PLANNING
+  DESIGN
+  DEVELOPMENT
+  QA
+  CLIENT_REVIEW
+  GO_LIVE
+  COMPLETED
+}
+
+Enum activity_type {
+  STAGE_CHANGE
+  NOTE_ADDED
+  ASSIGNED
+  WON
+  LOST
+}
+
+Enum actor_type {
+  ADMIN
+  AFFILIATE
+}
+
+// ============================================================
+// TABLE RELATIONSHIPS SUMMARY
+// ============================================================
+// admins 1──* audit_logs
+// admins 1──* affiliates (reviewed_by)
+// admins 1──* commission_payouts
+// admins 1──* products
+// admins 1──* courses
+// admins 1──* marketing_assets
+// admins 1──* support_tickets (assigned_to)
+// admins 1──* support_ticket_replies
+// admins 1──* knowledge_base_articles
+//
+// affiliates 1──1 branding_configs
+// affiliates 1──1 landing_pages
+// affiliates 1──* affiliates (parent_affiliate_id — self-referencing)
+// affiliates 1──* prospects
+// affiliates 1──* leads
+// affiliates 1──* clients
+// affiliates 1──* commission_records
+// affiliates 1──* proposals
+// affiliates 1──* questionnaire_responses
+// affiliates 1──* course_enrollments
+// affiliates 1──* marketing_asset_downloads
+// affiliates 1──* support_tickets
+//
+// prospects 1──* prospect_contacts
+// prospects 1──* prospect_notes
+// prospects 0..1──1 leads (converted_to_lead_id)
+//
+// leads 1──* lead_activities
+// leads 0..1──1 clients
+// leads 0..1──1 prospects
+//
+// clients 1──* client_contacts
+// clients 1──* client_notes
+// clients 1──* client_activities
+// clients 1──* website_orders
+// clients 1──* website_projects
+//
+// commission_records 0..1──* commission_records (parent_commission_id — self-referencing)
+// commission_records *──* commission_payouts (via commission_payout_items)
+//
+// products 1──* product_tiers
+// products 1──* proposal_items
+//
+// proposals 1──* proposal_items
+//
+// questionnaire_templates 1──* questionnaire_sections
+// questionnaire_sections 1──* questionnaire_questions
+// questionnaire_responses 1──* questionnaire_answers
+//
+// courses 1──* course_lessons
+// courses 1──* course_enrollments
+// course_enrollments 1──* lesson_completions
+//
+// website_orders 1──* website_projects
+// website_projects 1──* website_project_statuses
+// ============================================================

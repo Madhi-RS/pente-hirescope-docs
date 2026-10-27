@@ -1,0 +1,557 @@
+Project hirescope {
+  database_type: 'PostgreSQL'
+  Note: 'Logical 22-table schema. Keycloak is the authentication authority; PostgreSQL stores only application data, tenancy, membership, workflow, requisitions, and auditable business lifecycle state.'
+}
+
+Table canonical_people {
+  canonical_person_id uuid [pk, not null]
+  verified_email varchar(255) [not null, unique]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'One verified person across all organisation Keycloak realms. A person may have one realm-local identity per organisation, but this table never grants organisation membership or staff authority.'
+}
+
+Table users {
+  keycloak_user_id uuid [pk, not null]
+  canonical_person_id uuid [not null]
+  email varchar(255) [not null]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  phone varchar(20)
+  status varchar(20) [not null]
+  is_assigned boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Application user identity keyed by the current Keycloak realm User ID. status is the platform account status. is_assigned is false while an onboarding-realm registrant has no organisation membership and becomes true atomically when the backend links the user to an organisation membership. It is a workflow/read-model flag and must be kept consistent with membership lifecycle; passwords are never stored here.'
+}
+
+Table role_verification_requests {
+  verification_id uuid [pk, not null]
+  keycloak_user_id uuid [not null]
+  organization_id uuid [not null]
+  membership_id uuid [not null]
+  job_opening_id uuid
+  requested_role varchar(30) [not null]
+  document_url text [not null]
+  comment text [not null]
+  verification_status varchar(20) [not null]
+  reviewed_by_membership_id uuid
+  reviewed_at timestamptz
+  rejection_reason text
+  supersedes_verification_id uuid
+  created_at timestamptz [not null]
+
+  Indexes {
+    (organization_id, verification_status, created_at)
+    (membership_id, verification_status)
+  }
+
+  Note: 'A request from an existing or pending organisation membership. Public registration may use the “not an Applicant” route: after email verification the backend creates a PENDING_VERIFICATION membership and one request with proof/comment. HR_REVIEWER is organisation-level and job_opening_id must be NULL. A first HIRING_MANAGER request also has job_opening_id NULL: approval grants organisation-level requisition authority only, so the person can raise a requisition before an opening exists. INTERVIEWER is job-opening-specific and requires job_opening_id. When an approved Hiring Manager later creates an opening from an HR-approved requisition, the service creates the matching job-specific assignment. Rejection records rejection_reason and a corrected resubmission creates a new row linked by supersedes_verification_id; old decisions remain immutable. Platform Admin has read-only monitoring access.'
+}
+
+Table organization_onboarding_requests {
+  onboarding_request_id uuid [pk, not null]
+  requester_keycloak_user_id uuid [not null]
+  organization_name varchar(150) [not null]
+  document_url text [not null]
+  comment text [not null]
+  request_status varchar(20) [not null]
+  reviewed_by_keycloak_user_id uuid
+  reviewed_at timestamptz
+  rejection_reason text
+  approved_organization_id uuid
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (request_status, created_at)
+    (requester_keycloak_user_id, created_at)
+    (approved_organization_id) [unique]
+  }
+
+  Note: 'Pre-organisation lifecycle record, not a registration-user table. No organization_id is stored while a request is pending or rejected. requester_keycloak_user_id resolves the onboarding-realm user and contact data from users. Status: PENDING, APPROVED, or REJECTED. approved_organization_id is set only after the backend creates the organisation, Keycloak realm, initial Organisation Admin membership/role, and sets users.is_assigned = true; notifications are an application service concern.'
+}
+
+Table organizations {
+  organization_id uuid [pk, not null]
+  organization_name varchar(150) [not null]
+  keycloak_realm varchar(50) [not null]
+  status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Organisation/workspace root. keycloak_realm records the organisation-specific realm. status is the workspace lifecycle (ACTIVE or SUSPENDED); a suspended workspace denies member login at authentication (server-side enforcement). Organisation Admin identity is represented by membership and role, not duplicated here.'
+}
+
+Table organization_memberships {
+  membership_id uuid [pk, not null]
+  organization_id uuid [not null]
+  keycloak_user_id uuid [not null]
+  membership_status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (organization_id, keycloak_user_id) [unique]
+  }
+
+  Note: 'States that a user belongs to an organisation. A public “not an Applicant” registration creates a PENDING_VERIFICATION membership after email verification; Organization Admin approval changes it to ACTIVE and rejection leaves it non-active. An active membership can exist before or alongside a role-verification request. Before granting staff access, the backend must reject a user who already has active staff membership in another organisation.'
+}
+
+Table organization_member_roles {
+  member_role_id uuid [pk, not null]
+  membership_id uuid [not null]
+  role varchar(30) [not null]
+  job_opening_id uuid
+  created_at timestamptz [not null]
+
+  Indexes {
+    (membership_id, role, job_opening_id) [unique]
+  }
+
+  Note: 'Assigns authority/responsibility to a membership. ORGANIZATION_ADMIN and HR_REVIEWER are organisation-level and require job_opening_id NULL. HIRING_MANAGER with job_opening_id NULL is a limited organisation-level requisition authority; it may create/submit requisitions but cannot access unrelated applicants or openings. HIRING_MANAGER with a job_opening_id and INTERVIEWER are job-opening-specific. PostgreSQL must enforce no duplicate role scope (including NULL job_opening_id), one active ORGANIZATION_ADMIN per organisation, one HR_REVIEWER per organisation, and job-opening organisation = membership organisation.'
+}
+
+Table job_requisitions {
+  requisition_id uuid [pk, not null]
+  organization_id uuid [not null]
+  created_by_membership_id uuid [not null]
+  title varchar(150) [not null]
+  description text [not null]
+  position_count integer [not null]
+  business_justification text
+  salary_min numeric(12,2)
+  salary_max numeric(12,2)
+  experience_required text
+  skills text
+  job_requirements text
+  eligibility_criteria text
+  employment_type varchar(30)
+  location_work_mode varchar(50)
+  status varchar(30) [not null]
+  version integer [not null, default: 1]
+  submitted_at timestamptz
+  last_submitted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (organization_id, status, last_submitted_at)
+  }
+
+  Note: 'Organization-owned workforce requisition raised by a Hiring Manager with requisition authority and approved or returned by an HR Reviewer. status: REQUISITION_DRAFT, REQUISITION_PENDING_APPROVAL, REQUISITION_APPROVED, REQUISITION_REJECTED. Each submission locks an immutable version; a returned requisition is resubmitted as a new version (version increments) while review history is preserved in requisition_reviews. Approval does not create an opening: it authorizes the raising Hiring Manager to create one job opening from this requisition and configure its stages, sections, assessment configuration, and online questions. Job requirements live here and are accessed by the opening through the requisition reference rather than duplicated.'
+}
+
+Table requisition_reviews {
+  review_id uuid [pk, not null]
+  requisition_id uuid [not null]
+  reviewed_by_membership_id uuid [not null]
+  review_status varchar(30) [not null]
+  comment text
+  requisition_version integer [not null]
+  created_at timestamptz [not null]
+
+  Indexes {
+    (requisition_id, created_at)
+  }
+
+  Note: 'Append-only HR Reviewer decision on a submitted requisition version. review_status: APPROVED, REJECTED, RETURNED. comment is required for REJECTED or RETURNED. Each resubmission produces a new review row referencing the reviewed requisition_version; prior review rows are retained so review history (reviewer, status, comment, timestamp, version) is never overwritten.'
+}
+
+Table requisition_stages {
+  requisition_stage_id uuid [pk, not null]
+  requisition_id uuid [not null]
+  stage_type varchar(30) [not null]
+  stage_name varchar(100) [not null]
+  stage_order smallint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (requisition_id, stage_order) [unique]
+  }
+
+  Note: 'Legacy/proposed requisition-level stage outline. Under the approved workflow, the Hiring Manager configures the operational stage sequence only after HR approves the requisition and while creating the Job Opening. Do not populate this table for that flow unless a future product decision restores requisition-level stage design.'
+}
+
+Table requisition_stage_sections {
+  requisition_section_id uuid [pk, not null]
+  requisition_stage_id uuid [not null]
+  section_name varchar(100) [not null]
+  section_type varchar(30)
+  section_order smallint [not null]
+  instructions text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (requisition_stage_id, section_order) [unique]
+  }
+
+  Note: 'Configurable ordered section within a requisition stage (for example Self Introduction, Read a Passage, Answer Questions under an Online Assessment stage). Arbitrary sections are supported; the example sections are not hardcoded.'
+}
+
+Table job_openings {
+  job_opening_id uuid [pk, not null]
+  organization_id uuid [not null]
+  requisition_id uuid [not null]
+  created_by_membership_id uuid [not null]
+  title varchar(150) [not null]
+  description text [not null]
+  required_candidates integer [not null]
+  status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (requisition_id) [unique]
+    (organization_id, status)
+  }
+
+  Note: 'Opening created by the requisition’s approved Hiring Manager from an HR-approved requisition (requisition_id). title, description, and required_candidates are an operational snapshot of the requisition; operational stages, sections, assessment configuration, and questions are configured on this opening after creation. The service creates the Hiring Manager’s job-specific assignment for this opening. Remaining job requirements are read through requisition_id rather than duplicated. required_candidates is the requested position count. The backend may suspend or close it when filled positions reach required_candidates.'
+}
+
+Table job_applications {
+  application_id uuid [pk, not null]
+  job_opening_id uuid [not null]
+  canonical_person_id uuid [not null]
+  keycloak_user_id uuid [not null]
+  current_stage_id uuid
+  status varchar(30) [not null]
+  applied_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (job_opening_id, canonical_person_id) [unique]
+  }
+
+  Note: 'Connects an Applicant (who is not an organization member) to a job opening and stores overall progression. current_stage_id points at the job_opening_stages row for the current stage, derived from the configured stage sequence of the opening. Organisation scope is derived from the opening. Full stage history (started/completed times, results, HR decisions) lives in stage_attempts, stage_results, and hr_decisions.'
+}
+
+Table position_fills {
+  position_fill_id uuid [pk, not null]
+  job_opening_id uuid [not null]
+  application_id uuid
+  filled_by_membership_id uuid
+  filled_at timestamptz [not null]
+  reason text
+  created_at timestamptz [not null]
+
+  Indexes {
+    (job_opening_id, filled_at)
+  }
+
+  Note: 'Deliberate position-fill event for a job opening. Filled positions = count of rows for the opening; remaining = job_openings.required_candidates minus filled. Filling is separate from advancing a candidate (an advance does not fill a position). Service or database integrity must reject filled greater than required and negative remaining. A closed opening is retained read-only.'
+}
+
+Table job_opening_stages {
+  stage_id uuid [pk, not null]
+  job_opening_id uuid [not null]
+  stage_name varchar(100) [not null]
+  stage_type varchar(30) [not null]
+  stage_order smallint [not null]
+  mode varchar(20) [not null]
+  instructions text
+  max_score numeric(6,2)
+  passing_score numeric(6,2)
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    (job_opening_id, stage_order) [unique]
+  }
+
+  Note: 'Configurable stage for an opening. The sequence is not fixed. The next stage is derived from stage_order. instructions stores stage-specific readiness information; max_score and passing_score are nullable when scoring does not apply.'
+}
+
+Table stage_results {
+  stage_result_id uuid [pk, not null]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  score numeric(6,2)
+  result varchar(30) [not null]
+  comment text
+  created_at timestamptz [not null]
+
+  Note: 'Common stage outcome for pre-screen, assessments, problem solving, live interviews, and HR interviews. score is nullable. result is text; no result-options table or redundant next-stage field is used.'
+}
+
+Table stage_sections {
+  section_id uuid [pk, not null]
+  stage_id uuid [not null]
+  section_name varchar(100) [not null]
+  section_type varchar(30) [not null]
+  section_order smallint [not null]
+  instructions text
+  max_score numeric(6,2)
+
+  Indexes {
+    (stage_id, section_order) [unique]
+  }
+
+  Note: 'Configurable ordered section within a stage, such as a reading passage, technical MCQ, communication, mathematical aptitude, or grammar section.'
+}
+
+Table stage_questions {
+  question_id uuid [pk, not null]
+  section_id uuid [not null]
+  question_text text [not null]
+  question_type varchar(30) [not null]
+  question_order smallint [not null]
+  max_score numeric(6,2)
+
+  Indexes {
+    (section_id, question_order) [unique]
+  }
+
+  Note: 'Configured question within a stage section. Current formats include MCQ, text, and audio.'
+}
+
+Table stage_attempts {
+  attempt_id uuid [pk, not null]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  attempt_number smallint [not null]
+  started_at timestamptz
+  submitted_at timestamptz
+  scheduled_start_at timestamptz
+  deadline_at timestamptz
+  permitted_duration_minutes integer
+  configuration_version integer [not null]
+
+  Indexes {
+    (application_id, stage_id, attempt_number) [unique]
+  }
+
+  Note: 'One execution of a candidate-performed stage. Assessment timing is stored here, never inferred from updated_at. The timer begins only after readiness confirmation and active start; the configuration_version is the latest HR-approved version at start and is immutable for that attempt. Approved reattempts use a new HR-set schedule and the latest approved configuration.'
+}
+
+Table candidate_responses {
+  response_id uuid [pk, not null]
+  attempt_id uuid [not null]
+  question_id uuid [not null]
+  response_text text
+  media_url text
+  responded_at timestamptz [not null]
+
+  Note: 'Candidate answer stored separately from the stage result. MCQ/text values and audio transcripts use response_text; media_url references recorded media. No response_data JSONB is used.'
+}
+
+Table ai_stage_evaluations {
+  evaluation_id uuid [pk, not null]
+  attempt_id uuid [not null]
+  score numeric(6,2)
+  evaluation text [not null]
+  created_at timestamptz [not null]
+
+  Note: 'Immutable advisory AI score and text evaluation for an attempt. AI cannot change application state or make hiring decisions. The agreed flow mentions model version, but that column is not present in the supplied table list and is therefore not invented here.'
+}
+
+Table hr_decisions {
+  decision_id uuid [pk, not null]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  decided_by_membership_id uuid [not null]
+  decision varchar(30) [not null]
+  comment text
+  created_at timestamptz [not null]
+
+  Note: 'Attributable, human-controlled HR action for a stage. It remains separate from immutable AI output and supports the stage outcome/application progression recorded by the service.'
+}
+
+Table assessment_grievances {
+  grievance_id uuid [pk, not null]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  comment text [not null]
+  status varchar(20) [not null]
+  hr_decision_comment text
+  decided_by_membership_id uuid
+  created_at timestamptz [not null]
+  decided_at timestamptz
+
+  Note: 'Applicant grievance for interruption, deadline expiry, non-start, or interview no-show. Organisation and Applicant are derived from the signed-in application graph; a typed application reference is never trusted. Approval, while reattempt allowance remains, creates a separately auditable next attempt with HR-set timing and the latest approved configuration. Refusal/expiry closes the application with its distinct reason.'
+}
+
+Table stage_interviewers {
+  stage_interviewer_id uuid [pk, not null]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  interviewer_membership_id uuid [not null]
+  interview_attempt_number smallint [not null, default: 1]
+  status varchar(30) [not null]
+  assigned_at timestamptz [not null]
+  submitted_at timestamptz
+  overall_comment text
+
+  Indexes {
+    (application_id, stage_id, interview_attempt_number, interviewer_membership_id) [unique]
+  }
+
+  Note: 'Stage-scoped interviewer assignment and immutable final evaluation status. Each Live Interview stage has its own panel, required count, schedule, criteria, and completion condition. After a 24-hour missing-evaluation timeout, HR may create a reattempt with a replacement panel; only reattempt evaluations count, while original evaluations remain audit history.'
+}
+
+Table application_selections {
+  selection_id uuid [pk, not null]
+  application_id uuid [not null, unique]
+  selected_by_membership_id uuid [not null]
+  selected_at timestamptz [not null]
+  offer_status varchar(30) [not null]
+  offer_recorded_by_membership_id uuid
+  offer_recorded_at timestamptz
+  reservation_status varchar(30) [not null]
+  reserved_at timestamptz [not null]
+  released_at timestamptz
+  release_reason text
+
+  Note: 'Authorised HR final-selection record. SELECTED reserves a vacancy immediately. HR records external-offer acceptance or decline; decline releases the reservation. This is distinct from POSITION_FILLED, which exists only after onboarding completion.'
+}
+
+Table interviewer_scores {
+  interviewer_score_id uuid [pk, not null]
+  stage_interviewer_id uuid [not null]
+  section_id uuid [not null]
+  score numeric(6,2) [not null]
+  created_at timestamptz [not null]
+
+  Indexes {
+    (stage_interviewer_id, section_id) [unique]
+  }
+
+  Note: 'Immutable score for one configured Live Interview criterion/section. The section and weighting are the version assigned to this interview attempt; peer interviewers cannot read these rows.'
+}
+
+Table onboarding_records {
+  onboarding_id uuid [pk, not null]
+  selection_id uuid [not null, unique]
+  status varchar(30) [not null]
+  updated_by_membership_id uuid [not null]
+  updated_at timestamptz [not null]
+  completion_reference text
+  failure_reason text
+
+  Note: 'Recruitment-side onboarding status only: ONBOARDING_PENDING, ONBOARDING_COMPLETED, ONBOARDING_FAILED, or ONBOARDING_CANCELLED. HR updates this from the external onboarding process. Completion creates POSITION_FILLED; failure/cancellation closes the application and releases its reservation.'
+}
+
+Table notification_outbox {
+  notification_id uuid [pk, not null]
+  application_id uuid [not null]
+  event_type varchar(50) [not null]
+  sender_membership_id uuid [not null]
+  recipient_email varchar(255) [not null]
+  status varchar(30) [not null]
+  retry_count integer [not null, default: 0]
+  provider_reason text
+  created_at timestamptz [not null]
+  sent_at timestamptz
+
+  Note: 'Transactional outbox for every applicant-visible persisted transition. The sender is the responsible verified HR Reviewer identity; delivery retry/failure never rolls back the workflow decision and confidential evaluation data is excluded.'
+}
+
+Table legal_holds {
+  legal_hold_id uuid [pk, not null]
+  application_id uuid [not null]
+  placed_by_membership_id uuid [not null]
+  reason text [not null]
+  placed_at timestamptz [not null]
+  released_by_membership_id uuid
+  released_at timestamptz
+
+  Note: 'Only the organisation HR Reviewer may place/release a legal hold. An active hold prevents scheduled retention deletion and limits historical access to authorised HR/legal personnel.'
+}
+
+Table audit_events {
+  audit_event_id uuid [pk, not null]
+  organization_id uuid [not null]
+  application_id uuid
+  actor_membership_id uuid
+  event_type varchar(60) [not null]
+  reason text
+  event_data text
+  created_at timestamptz [not null]
+
+  Note: 'Append-only audit history for workflow transitions, configuration versions, schedules, invitations, notifications, closing/reopening, vacancies, retention deletion, and legal holds.'
+}
+
+Ref: users.canonical_person_id > canonical_people.canonical_person_id
+Ref: role_verification_requests.keycloak_user_id > users.keycloak_user_id
+Ref: role_verification_requests.organization_id > organizations.organization_id
+Ref: role_verification_requests.membership_id > organization_memberships.membership_id
+Ref: role_verification_requests.job_opening_id > job_openings.job_opening_id
+Ref: role_verification_requests.reviewed_by_membership_id > organization_memberships.membership_id
+Ref: role_verification_requests.supersedes_verification_id > role_verification_requests.verification_id
+
+Ref: organization_onboarding_requests.requester_keycloak_user_id > users.keycloak_user_id
+Ref: organization_onboarding_requests.reviewed_by_keycloak_user_id > users.keycloak_user_id
+Ref: organization_onboarding_requests.approved_organization_id > organizations.organization_id
+
+Ref: organization_memberships.organization_id > organizations.organization_id
+Ref: organization_memberships.keycloak_user_id > users.keycloak_user_id
+Ref: organization_member_roles.membership_id > organization_memberships.membership_id
+Ref: organization_member_roles.job_opening_id > job_openings.job_opening_id
+
+Ref: job_openings.organization_id > organizations.organization_id
+Ref: job_openings.created_by_membership_id > organization_memberships.membership_id
+Ref: job_applications.job_opening_id > job_openings.job_opening_id
+Ref: job_applications.canonical_person_id > canonical_people.canonical_person_id
+Ref: job_applications.keycloak_user_id > users.keycloak_user_id
+
+Ref: job_opening_stages.job_opening_id > job_openings.job_opening_id
+Ref: stage_sections.stage_id > job_opening_stages.stage_id
+Ref: stage_questions.section_id > stage_sections.section_id
+
+Ref: stage_results.application_id > job_applications.application_id
+Ref: stage_results.stage_id > job_opening_stages.stage_id
+Ref: stage_attempts.application_id > job_applications.application_id
+Ref: stage_attempts.stage_id > job_opening_stages.stage_id
+Ref: candidate_responses.attempt_id > stage_attempts.attempt_id
+Ref: candidate_responses.question_id > stage_questions.question_id
+Ref: ai_stage_evaluations.attempt_id > stage_attempts.attempt_id
+
+Ref: hr_decisions.application_id > job_applications.application_id
+Ref: hr_decisions.stage_id > job_opening_stages.stage_id
+Ref: hr_decisions.decided_by_membership_id > organization_memberships.membership_id
+
+Ref: assessment_grievances.application_id > job_applications.application_id
+Ref: assessment_grievances.stage_id > job_opening_stages.stage_id
+Ref: assessment_grievances.decided_by_membership_id > organization_memberships.membership_id
+
+Ref: stage_interviewers.application_id > job_applications.application_id
+Ref: stage_interviewers.stage_id > job_opening_stages.stage_id
+Ref: stage_interviewers.interviewer_membership_id > organization_memberships.membership_id
+
+Ref: application_selections.application_id > job_applications.application_id
+Ref: application_selections.selected_by_membership_id > organization_memberships.membership_id
+Ref: application_selections.offer_recorded_by_membership_id > organization_memberships.membership_id
+Ref: interviewer_scores.stage_interviewer_id > stage_interviewers.stage_interviewer_id
+Ref: interviewer_scores.section_id > stage_sections.section_id
+Ref: onboarding_records.selection_id > application_selections.selection_id
+Ref: onboarding_records.updated_by_membership_id > organization_memberships.membership_id
+
+Ref: notification_outbox.application_id > job_applications.application_id
+Ref: notification_outbox.sender_membership_id > organization_memberships.membership_id
+Ref: legal_holds.application_id > job_applications.application_id
+Ref: legal_holds.placed_by_membership_id > organization_memberships.membership_id
+Ref: legal_holds.released_by_membership_id > organization_memberships.membership_id
+Ref: audit_events.organization_id > organizations.organization_id
+Ref: audit_events.application_id > job_applications.application_id
+Ref: audit_events.actor_membership_id > organization_memberships.membership_id
+
+Ref: job_requisitions.organization_id > organizations.organization_id
+Ref: job_requisitions.created_by_membership_id > organization_memberships.membership_id
+
+Ref: requisition_reviews.requisition_id > job_requisitions.requisition_id
+Ref: requisition_reviews.reviewed_by_membership_id > organization_memberships.membership_id
+
+Ref: requisition_stages.requisition_id > job_requisitions.requisition_id
+Ref: requisition_stage_sections.requisition_stage_id > requisition_stages.requisition_stage_id
+
+Ref: job_openings.requisition_id > job_requisitions.requisition_id
+
+Ref: position_fills.job_opening_id > job_openings.job_opening_id
+Ref: position_fills.application_id > job_applications.application_id
+Ref: position_fills.filled_by_membership_id > organization_memberships.membership_id
+
+Ref: job_applications.current_stage_id > job_opening_stages.stage_id

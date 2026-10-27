@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HireScope — Fair areas, then the résumé</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1c1917; --ink-soft: #44403c; --muted: #78716c;
+      --paper: #f3eee6; --card: #fffdf9; --line: #e7ddd0; --line-strong: #d6cbbd;
+      --teal: #0f6e6b; --teal-dark: #0b4f4d; --teal-soft: #e4f3f2;
+      --gold: #f4e6c8; --s1: #b42318; --s2: #b54708; --s3: #0f6e6b; --s4: #067647;
+      --shadow: 0 1px 2px rgba(28,25,23,.06), 0 8px 24px rgba(28,25,23,.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: "IBM Plex Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); font-size: 14px; line-height: 1.45; }
+    button, input, select, textarea { font-family: inherit; font-size: 14px; }
+    button { cursor: pointer; }
+    .app { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+    .sidebar { background: #161311; color: #f5efe6; padding: 22px 16px 16px; display: flex; flex-direction: column; gap: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
+    .mark { width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid #e8c48a; display: grid; place-items: center; position: relative; }
+    .mark::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #e8c48a; }
+    .mark::after { content: ""; position: absolute; width: 16px; height: 1.5px; background: #e8c48a; }
+    .brand-name { font-family: Fraunces, Georgia, serif; font-size: 18px; font-weight: 600; }
+    .brand-name span { color: #e8c48a; }
+    .who { display: flex; gap: 4px; background: #221e1b; border-radius: 8px; padding: 4px; }
+    .who button { flex: 1; border: 0; background: transparent; color: #c4bbb0; border-radius: 6px; padding: 6px 4px; font-size: 11px; font-weight: 600; }
+    .who button.on { background: #2f4a48; color: #fff; }
+    .nav .sec { margin: 12px 10px 4px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #8a8076; }
+    .nav button { width: 100%; background: transparent; border: 0; color: #d6cdc2; text-align: left; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; font-weight: 500; }
+    .nav button:hover { background: #2a2522; color: #fff; }
+    .nav button.active { background: #2f4a48; color: #fff; }
+    .side-role { margin-top: auto; background: #221e1b; border: 1px solid #3a342f; border-radius: 10px; padding: 12px; }
+    .side-role .k { font-size: 11px; color: #9a9188; }
+    .side-role .v { font-weight: 600; margin-top: 3px; font-size: 13px; }
+    .pill { display: inline-block; margin-top: 8px; font-size: 11px; background: #2f4a48; color: #d7efed; padding: 3px 8px; border-radius: 99px; }
+    .main { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
+    .topbar { min-height: 58px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 22px; background: var(--card); flex-wrap: wrap; }
+    .crumbs { color: var(--muted); font-size: 13px; }
+    .crumbs b { color: var(--ink); }
+    .flow { display: flex; gap: 2px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
+    .flow span { padding: 4px 8px; border-radius: 99px; }
+    .flow span.on { background: var(--teal-soft); color: var(--teal-dark); font-weight: 600; }
+    .flow span.done { color: var(--ink-soft); }
+    .chip { border: 1px solid var(--line-strong); background: var(--card); border-radius: 99px; padding: 5px 10px; font-size: 12px; color: var(--ink-soft); }
+    .chip.on { background: var(--teal-soft); border-color: #b7d9d7; color: var(--teal-dark); }
+    .chip.warn { background: #fff8e8; border-color: #ead7a2; color: #7a5b14; }
+    .btn { border: 1px solid var(--line-strong); background: var(--card); border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 500; color: var(--ink); }
+    .btn:hover { background: #f7f1e8; }
+    .btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .btn.primary:hover { background: var(--teal-dark); }
+    .btn.good { background: var(--s4); border-color: var(--s4); color: #fff; }
+    .view { display: none; padding: 22px 24px 40px; flex: 1; }
+    .view.on { display: block; }
+    .view.grade-view.on { display: flex; flex-direction: column; padding: 0; }
+    h1 { font-family: Fraunces, Georgia, serif; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+    h2 { font-size: 16px; font-weight: 600; }
+    .sub { color: var(--muted); margin-top: 4px; }
+    .banner { background: var(--teal-soft); border: 1px solid #b7d9d7; color: var(--teal-dark); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin: 14px 0; }
+    .banner.warn { background: #fff8e8; border-color: #ead7a2; color: #7a5b14; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+    label.f { display: block; font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: var(--ink-soft); }
+    input[type=text], select, textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; background: #fff; }
+    textarea { min-height: 72px; resize: vertical; }
+    .req { display: flex; gap: 8px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+    .req:first-of-type { border-top: 0; }
+    .ai { font-size: 11px; color: var(--teal-dark); background: var(--teal-soft); padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+    .ctx { font-size: 11px; color: #7a5b14; background: #fff8e8; padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+    .test { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fff; margin-top: 10px; }
+    .hint { font-size: 12px; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+    .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .stat .n { font-family: Fraunces, serif; font-size: 26px; }
+    .stat .l { font-size: 12px; color: var(--muted); }
+    table.heat { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    table.heat th, table.heat td { padding: 9px 6px; text-align: center; border-bottom: 1px solid var(--line); font-size: 12px; }
+    table.heat th { font-weight: 500; color: var(--muted); font-size: 10.5px; background: #faf6f0; }
+    table.heat td:first-child, table.heat th:first-child { text-align: left; padding-left: 12px; font-weight: 500; }
+    .cell { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; font-weight: 600; color: #fff; }
+    .c1 { background: var(--s1); } .c2 { background: var(--s2); } .c3 { background: var(--s3); } .c4 { background: var(--s4); }
+    .cand-shell { max-width: 760px; margin: 0 auto; }
+    .timer { font-family: "IBM Plex Mono", monospace; background: #161311; color: #f4e6c8; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+    .qcard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); }
+    .g-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--card); }
+    .crit-tabs button { border: 1px solid var(--line-strong); background: #fff; border-radius: 8px; padding: 6px 9px; font-size: 12px; color: var(--ink-soft); }
+    .crit-tabs button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .g-body { display: grid; grid-template-columns: 1.35fr .9fr; }
+    .artifact { padding: 18px 22px 80px; background: #f7f2ea; }
+    .paper { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 28px 32px; box-shadow: var(--shadow); max-width: 720px; }
+    .paper h3 { font-family: Fraunces, serif; font-size: 22px; margin-bottom: 10px; }
+    .paper p { margin: 10px 0; }
+    .hl { background: #fff2b8; border-bottom: 2px solid #e0b84e; padding: 0 2px; }
+    .grade-pane { border-left: 1px solid var(--line); background: var(--card); padding: 16px; }
+    .score { text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: 28px 1fr; gap: 10px; margin-bottom: 8px; width: 100%; }
+    .score.on4 { background: #ecfdf3; border-color: #a6e3c0; }
+    .sn { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-weight: 600; color: #fff; }
+    .s1 .sn { background: var(--s1); } .s2 .sn { background: var(--s2); } .s3 .sn { background: var(--s3); } .s4 .sn { background: var(--s4); }
+    .score small { display: block; color: var(--muted); font-size: 12px; }
+    .ev { width: 100%; border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 10px; min-height: 70px; background: #fffdf8; }
+    .g-foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #161311; color: #efe8de; font-size: 12px; }
+    .kbd { font-family: "IBM Plex Mono", monospace; font-size: 11px; background: #2c2724; border: 1px solid #4a433c; color: #f0e7d8; padding: 1px 6px; border-radius: 4px; }
+    .g-foot .spacer { flex: 1; }
+    .dots { display: flex; gap: 6px; margin: 16px 0; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+    .dots i.on { background: var(--teal); }
+    .resume { background: #faf6f0; border: 1px dashed var(--line-strong); border-radius: 10px; padding: 12px; font-size: 13px; }
+    .wave { height: 48px; border-radius: 8px; background:
+      repeating-linear-gradient(90deg, #0f6e6b 0 3px, transparent 3px 7px);
+      background-size: 7px 100%;
+      background-position: center;
+      opacity: .55;
+      mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40'><path d='M0 20 L4 12 L8 28 L12 8 L16 32 L20 14 L24 26 L28 10 L32 30 L36 16 L40 22 L44 6 L48 34 L52 18 L56 24 L60 12 L64 28 L68 20 L72 14 L76 26 L80 8 L84 30 L88 16 L92 22 L96 10 L100 32 L104 18 L108 24 L112 14 L116 28 L120 20 L124 12 L128 30 L132 16 L136 22 L140 8 L144 34 L148 18 L152 26 L156 12 L160 28 L164 20 L168 14 L172 24 L176 10 L180 30 L184 18 L188 22 L192 16 L196 26 L200 20' fill='none' stroke='black' stroke-width='8'/></svg>");
+      mask-size: 100% 100%;
+      background-color: #d6cbbd;
+    }
+    .wave.live { opacity: 1; background-color: #0f6e6b; animation: pulse 1.2s ease-in-out infinite; }
+    .wave.read { background-color: #b54708; opacity: .85; }
+    .wave.flag { background-color: #b42318; opacity: .8; }
+    @keyframes pulse { 50% { opacity: .45; } }
+    .rec { width: 64px; height: 64px; border-radius: 50%; border: 0; background: #b42318; color: #fff; font-weight: 600; font-size: 12px; box-shadow: 0 0 0 8px #f8d4d0; }
+    .rec.on { background: #161311; box-shadow: 0 0 0 8px #ead7a2; }
+    .recrow { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+    .script { background: #faf6f0; border-left: 3px solid var(--teal); padding: 12px 14px; border-radius: 0 10px 10px 0; font-size: 14.5px; line-height: 1.55; }
+    .vtrack { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+    .vtrack .lab { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="mark"></div><div class="brand-name">Hire<span>Scope</span></div></div>
+      <div class="who">
+        <button class="on" id="p-hm" onclick="persona('hm')">Hiring mgr</button>
+        <button id="p-ap" onclick="persona('ap')">Applicant</button>
+        <button id="p-hr" onclick="persona('hr')">HR</button>
+      </div>
+      <nav class="nav" id="nav-hm">
+        <div class="sec">Hiring manager</div>
+        <button class="active" data-view="create">1. Create opening</button>
+        <button data-view="draft">2. Fair pack · edit</button>
+        <button data-view="publish">3. Publish & invite</button>
+      </nav>
+      <nav class="nav" id="nav-ap" style="display:none">
+        <div class="sec">Applicant</div>
+        <button data-view="apply">4. Work sample</button>
+        <button data-view="vintro">5. Voice · intro</button>
+        <button data-view="vread">6. Voice · reading</button>
+        <button data-view="vq1">7. Voice · interview</button>
+        <button data-view="done">8. Submitted</button>
+      </nav>
+      <nav class="nav" id="nav-hr" style="display:none">
+        <div class="sec">HR review</div>
+        <button data-view="inbox">9. AI grades in</button>
+        <button data-view="grade">10. Review follow-through</button>
+        <button data-view="voice">11. Voice integrity</button>
+        <button data-view="shortlist">12. Shortlist + context</button>
+      </nav>
+      <div class="side-role">
+        <div class="k">Rule</div>
+        <div class="v">Score the work first</div>
+        <div class="k" style="margin-top:8px">Résumé</div>
+        <div class="v" style="font-weight:500;font-size:12.5px">Hidden until scores lock</div>
+        <span class="pill">No grit quiz · no pedigree gate</span>
+      </div>
+    </aside>
+    <section class="main">
+      <header class="topbar">
+        <div class="crumbs">Northstar · Growth · <b>Senior PM · REQ-1842</b></div>
+        <div class="flow" id="flowbar">
+          <span class="on">Create</span><span>Generate</span><span>Publish</span><span>Candidate</span><span>AI grade</span><span>Shortlist</span>
+        </div>
+      </header>
+
+      <div id="create" class="view on">
+        <h1>Create a job opening</h1>
+        <p class="sub">Describe the work. HireScope drafts seven job-related areas to score — not school, years, or brand. The résumé is read after scores lock.</p>
+        <div class="grid2" style="margin-top:18px">
+          <div class="card">
+            <label class="f">Job title</label>
+            <input type="text" value="Senior Product Manager" />
+            <label class="f">Team</label>
+            <input type="text" value="Growth" />
+            <label class="f">What will they own in 90 days?</label>
+            <textarea>Own activation from signup to first value. Find why trial-to-paid dropped after checkout redesign and ship one bet. Write specs other people can build from.</textarea>
+            <label class="f">Do not use as a gate</label>
+            <input type="text" value="FAANG, CS degree, 7+ years, no employment gaps" />
+          </div>
+          <div class="card">
+            <h2>What AI will generate</h2>
+            <p class="hint" style="margin:8px 0 12px">Seven scored areas that predict “they got the job done.” Résumé context only, after scoring.</p>
+            <div class="req"><input type="checkbox" checked disabled /><div><b>7 scored areas</b><div class="hint">Task, thinking, follow-through, learning, judgment, people, integrity</div></div></div>
+            <div class="req"><input type="checkbox" checked disabled /><div><b>Work sample with a hole in the data</b><div class="hint">So follow-through and learning show up</div></div></div>
+            <div class="req"><input type="checkbox" checked disabled /><div><b>Structured interview</b><div class="hint">Same 4 questions. Month-four failure, not “are you gritty?”</div></div></div>
+            <div class="req"><input type="checkbox" checked disabled /><div><b>Distance traveled — context only</b><div class="hint">Never a score. Shown after lock.</div></div></div>
+            <div class="banner warn">No grit slider. Perseverance is scored from the work.</div>
+            <button class="btn primary" onclick="go('draft')">Generate fair pack →</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="draft" class="view">
+        <h1>Fair pack — edit before anyone sees it</h1>
+        <p class="sub">These are the areas companies actually use when they find people the résumé would have cut. Uncheck anything that is not this job.</p>
+        <div class="banner">Draft only. Résumés will stay hidden from reviewers until scores lock.</div>
+        <div class="grid2">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between"><h2>Scored areas</h2><span class="ai">AI drafted</span></div>
+            <div class="req"><input type="checkbox" checked /><div><b>1. Job-task performance</b><div class="hint">Can they do a slice of this job? Work sample is the evidence.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>2. Thinking on this material</b><div class="hint">Messy activation data, not a brainteaser.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>3. Follow-through</b><div class="hint">Finish the ugly middle. Recover from a wrong turn. This is grit as behavior.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>4. Learning velocity</b><div class="hint">One number is missing on purpose. Do they notice and keep moving?</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>5. Judgment under constraint</b><div class="hint">What they cut. What they will not ship.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>6. Working with people when messy</b><div class="hint">Not culture fit. Same conflict scenario for everyone.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>7. Integrity &amp; ownership</b><div class="hint">Names limits. No fake certainty.</div></div></div>
+            <div class="req"><input type="checkbox" disabled /><div><b>Distance traveled</b> <span class="ctx">context only</span><div class="hint">Gaps, bootcamp, military, caregiving, no brand. Not adversity points.</div></div></div>
+            <div class="req"><input type="checkbox" /><div style="opacity:.55"><b>7+ years at a consumer marketplace</b><div class="hint">Dropped. Years are a weak proxy and a résumé gate.</div></div></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between"><h2>How we will see it</h2><span class="ai">AI drafted</span></div>
+            <div class="test">
+              <h3 style="font-size:14px">Work sample · 90 minutes</h3>
+              <p class="hint">Activation fell 18% after checkout redesign. Diagnose, pick one bet, write v1.</p>
+              <p class="hint" style="margin-top:6px"><b>Designed hole:</b> returning-trial rate is missing from the export. Scores thinking, follow-through, learning, judgment, task.</p>
+              <button class="btn" style="margin-top:8px">Edit prompt</button>
+            </div>
+            <div class="test">
+              <h3 style="font-size:14px">Structured interview · 20 minutes</h3>
+              <p class="hint">Q1. A goal that failed for months — what did you do in month four? <i>Follow-through</i></p>
+              <p class="hint">Q2. A tool you had to teach yourself. First week vs week four. <i>Learning</i></p>
+              <p class="hint">Q3. Sales VP wants the redesign rolled back Friday. Next 48 hours? <i>People</i></p>
+              <p class="hint">Q4. What would you not ship this quarter, and why? <i>Judgment + integrity</i></p>
+              <button class="btn" style="margin-top:8px">Edit questions</button>
+            </div>
+            <div class="test">
+              <h3 style="font-size:14px">Spoken interview · default</h3>
+              <p class="hint">1. Intro of themselves (~45s) — natural speaking baseline</p>
+              <p class="hint">2. Same reading passage for everyone (~30s) — read-aloud baseline</p>
+              <p class="hint">3. The four questions answered out loud</p>
+              <p class="hint" style="margin-top:6px">AI may flag “answer closer to their reading voice than their intro.” That is a listen-flag, not a cheat score. Typed path stays as accommodation.</p>
+              <button class="btn" style="margin-top:8px">Edit reading passage</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+          <button class="btn" onclick="go('create')">← Back</button>
+          <button class="btn primary" onclick="go('publish')">Looks right — preview publish →</button>
+        </div>
+      </div>
+
+      <div id="publish" class="view">
+        <h1>Publish this pack</h1>
+        <p class="sub">Every applicant gets the same incomplete data set and the same four questions. Reviewers will not see résumés until they lock scores.</p>
+        <div class="stats">
+          <div class="stat"><div class="n">7</div><div class="l">Scored areas</div></div>
+          <div class="stat"><div class="n">0</div><div class="l">Pedigree gates</div></div>
+          <div class="stat"><div class="n">1</div><div class="l">Context field, after lock</div></div>
+          <div class="stat"><div class="n">v1</div><div class="l">Locks on publish</div></div>
+        </div>
+        <div class="card">
+          <label class="f">Invite</label>
+          <input type="text" value="https://app.hirescope.test/go/REQ-1842" />
+          <div class="banner warn">Do not sift résumés first. The person this process is built to catch often dies in that sift.</div>
+          <button class="btn primary" onclick="persona('ap')">Publish pack &amp; open candidate preview →</button>
+        </div>
+      </div>
+
+      <div id="apply" class="view">
+        <div class="cand-shell">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <h1>Senior PM assessment</h1>
+              <p class="sub">Scored on the work. Your résumé is not shown to reviewers until they finish scoring.</p>
+            </div>
+            <div class="timer">1:14:08 left</div>
+          </div>
+          <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+          <div class="qcard" id="ws">
+            <div class="hint">Part 1 · Work sample · one figure in the export is missing on purpose</div>
+            <h2 style="margin:6px 0 10px">Activation dropped 18% after checkout redesign</h2>
+            <p>First-value activation fell from 41% to 23% the week extra fields were added. Desktop barely moved. Mobile took the hit. The attached export has new vs returning trials — except <b>Q2 returning-trial rate is blank</b>.</p>
+            <label class="f">Your memo</label>
+            <textarea style="min-height:160px">The export is missing Q2 returning-trial rate, so I cannot yet split new vs returning cleanly. I would not stall the sprint for a perfect cut. I would ship delayed fields on mobile this week, measure new-trial activation (which we do have), and pull the missing returning cut from warehouse before Friday.
+
+If mobile new-trial activation does not recover 8 points in two weeks, kill delayed-fields and treat it as a sales-assist problem — not a six-week rewrite. I would not staff a loyalty program. That does not explain an 18-point cliff the week the form got longer.</textarea>
+            <label class="f">Optional context for after scoring (reviewers will not see this yet)</label>
+            <textarea style="min-height:52px">Career break 2023–24 for caregiving. Bootcamp + 2 years B2B PM. No brand-name employers.</textarea>
+            <div style="display:flex;justify-content:space-between;margin-top:14px">
+              <button class="btn">Save draft</button>
+              <button class="btn primary" onclick="go('vintro')">Continue to spoken interview →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="vintro" class="view">
+        <div class="cand-shell">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <h1>Spoken interview</h1>
+              <p class="sub">First we need your natural speaking voice. Then a short reading sample. Then the four questions out loud.</p>
+            </div>
+            <div class="timer">REC · intro</div>
+          </div>
+          <div class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+          <div class="banner warn">We record your voice for this opening only: answers, transcript, and an integrity check that compares your speaking voice to your reading voice. We do not score accent, confidence, or personality. You can request a typed interview instead.</div>
+          <div class="qcard">
+            <div class="hint">Part 2 of 4 · Spoken introduction · ~45 seconds · natural baseline</div>
+            <h2 style="margin:6px 0 10px">Introduce yourself as a product person</h2>
+            <p>Talk about the kind of problems you like to work on. Do not list schools or employers — reviewers will not hear this clip until scores lock.</p>
+            <div class="recrow">
+              <button class="rec" id="r1" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Stop':'Rec';document.getElementById('w1').classList.toggle('live')">Rec</button>
+              <div style="flex:1">
+                <div class="wave" id="w1"></div>
+                <div class="hint" style="margin-top:6px">This is your natural speaking baseline. Not a scored monologue.</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <button class="btn">Request typed interview</button>
+              <button class="btn primary" onclick="go('vread')">Use this take →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="vread" class="view">
+        <div class="cand-shell">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <h1>Reading sample</h1>
+              <p class="sub">Same passage for every applicant. This is your read-aloud voice — not a literacy or accent test.</p>
+            </div>
+            <div class="timer">REC · reading</div>
+          </div>
+          <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+          <div class="qcard">
+            <div class="hint">Part 3 of 4 · Read this aloud · ~30 seconds · read-aloud baseline</div>
+            <h2 style="margin:6px 0 10px">Read the passage on the screen</h2>
+            <div class="script">When a number in a report is missing, the useful move is not to wait for a perfect export. Name the hole, pick the next measurement you already have, and write the kill line before you spend another week. That is how a team keeps moving when the data is incomplete.</div>
+            <div class="recrow">
+              <button class="rec" id="r2" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Stop':'Rec';document.getElementById('w2').classList.toggle('live')">Rec</button>
+              <div style="flex:1">
+                <div class="wave read" id="w2"></div>
+                <div class="hint" style="margin-top:6px">We compare later answers to this clip and to your intro. Reading an LLM script often sounds more like this than like your intro.</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <button class="btn">Re-record</button>
+              <button class="btn primary" onclick="go('vq1')">Use this take →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="vq1" class="view">
+        <div class="cand-shell">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <h1>Question 1 of 4</h1>
+              <p class="sub">Answer out loud, like a real interview. Think first if you need to. Do not read an essay.</p>
+            </div>
+            <div class="timer">Think 0:18</div>
+          </div>
+          <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+          <div class="qcard">
+            <div class="hint">Follow-through · spoken</div>
+            <h2 style="margin:6px 0 10px">A goal that failed for months — what did you do in month four?</h2>
+            <div class="recrow">
+              <button class="rec on" id="r3" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Stop':'Rec';document.getElementById('w3').classList.toggle('live')">Stop</button>
+              <div style="flex:1">
+                <div class="wave live" id="w3"></div>
+                <div class="hint" style="margin-top:6px">Recording. One retry allowed. Transcript is what we score for Follow-through.</div>
+              </div>
+            </div>
+            <p class="hint">Your words, not polish: “I was wrong for three months. Month four was change the bet, not try harder at the same bet.”</p>
+            <div style="display:flex;justify-content:space-between;margin-top:12px">
+              <span class="hint">Q2–Q4 still ahead</span>
+              <button class="btn primary" onclick="go('done')">Submit this answer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="done" class="view">
+        <div class="cand-shell">
+          <div class="card" style="padding:28px">
+            <h1>Submitted</h1>
+            <p class="sub">Your work and spoken answers are scored first. Voice is compared only to your own intro and reading sample. A “sounds like reading” flag is for a human to hear — it cannot reject you. Optional context stays hidden until scores lock.</p>
+            <div class="banner">A reviewer will see what you produced, not where you used to work, until they have scored it.</div>
+            <button class="btn primary" onclick="persona('hr')">Preview HR side →</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="inbox" class="view">
+        <h1>AI grades are in · résumé still hidden</h1>
+        <p class="sub">Seven job areas. Follow-through is scored from the artifact and the month-four answer — not a grit quiz. C-07 is the packet a résumé sift would have dropped.</p>
+        <div class="banner warn">Anonymous · résumé hidden until you lock scores. Distance traveled is not in this table.</div>
+        <div class="stats">
+          <div class="stat"><div class="n">18</div><div class="l">Packets scored</div></div>
+          <div class="stat"><div class="n">7</div><div class="l">Areas, not pedigree</div></div>
+          <div class="stat"><div class="n">C-07</div><div class="l">High follow-through</div></div>
+          <div class="stat"><div class="n">0</div><div class="l">Auto-advanced</div></div>
+        </div>
+        <table class="heat">
+          <thead>
+            <tr>
+              <th>ID</th><th>Task</th><th>Think</th><th>Follow</th><th>Learn</th><th>Judge</th><th>People</th><th>Integrity</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>C-07</td>
+              <td><span class="cell c3">3</span></td><td><span class="cell c4">4</span></td>
+              <td><span class="cell c4">4</span></td><td><span class="cell c4">4</span></td>
+              <td><span class="cell c4">4</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c3">3</span></td>
+              <td><button class="btn primary" onclick="go('grade')">Review</button></td>
+            </tr>
+            <tr>
+              <td>C-14</td>
+              <td><span class="cell c4">4</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c3">3</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c4">4</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c3">3</span></td>
+              <td><button class="btn">Review</button></td>
+            </tr>
+            <tr>
+              <td>C-02</td>
+              <td><span class="cell c3">3</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c2">2</span></td><td><span class="cell c2">2</span></td>
+              <td><span class="cell c3">3</span></td><td><span class="cell c3">3</span></td>
+              <td><span class="cell c3">3</span></td>
+              <td><button class="btn">Review</button></td>
+            </tr>
+            <tr>
+              <td>C-11</td>
+              <td><span class="cell c2">2</span></td><td><span class="cell c2">2</span></td>
+              <td><span class="cell c1">1</span></td><td><span class="cell c2">2</span></td>
+              <td><span class="cell c1">1</span></td><td><span class="cell c2">2</span></td>
+              <td><span class="cell c2">2</span></td>
+              <td><button class="btn">Review</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top:10px">C-11 stalled when the export was incomplete. Voice flag on C-11: Q1 closer to their reading sample than their intro — listen, do not auto-fail. C-07 named the hole and kept shipping.</p>
+      </div>
+
+      <div id="grade" class="view grade-view">
+        <div class="g-top">
+          <div class="crit-tabs">
+            <button>Task</button><button>Think</button>
+            <button class="on">Follow-through</button>
+            <button>Learn</button><button>Judge</button><button>People</button><button>Integrity</button>
+          </div>
+          <span class="chip on" style="margin-left:auto">AI 4 · you confirm</span>
+          <span class="chip warn">Résumé hidden</span>
+        </div>
+        <div class="g-body">
+          <div class="artifact">
+            <div class="paper">
+              <div class="hint" style="margin-bottom:10px">C-07 · work sample + month-four answer · no name, school, or employer yet</div>
+              <h3>Follow-through evidence</h3>
+              <p>The export is missing Q2 returning-trial rate, so I cannot yet split new vs returning cleanly.</p>
+              <p><span class="hl">I would not stall the sprint for a perfect cut. I would ship delayed fields on mobile this week, measure new-trial activation (which we do have), and pull the missing returning cut from warehouse before Friday.</span></p>
+              <p>Interview, month four: “I was wrong for three months. The fourth month was change the bet, not try harder at the same bet.”</p>
+              <div class="banner">AI note: noticed the hole, did not freeze, named a kill line. That is perseverance of effort — not a grit essay.</div>
+            </div>
+          </div>
+          <aside class="grade-pane">
+            <h2>Follow-through</h2>
+            <p class="hint">Grit as behavior on this packet. Override if the pin is wrong.</p>
+            <button class="score s1"><span class="sn">1</span><span>Stalled<small>Stopped when data or the first bet failed.</small></span></button>
+            <button class="score s2"><span class="sn">2</span><span>Performed effort<small>Busy, same bet, no new tactic.</small></span></button>
+            <button class="score s3"><span class="sn">3</span><span>Kept moving<small>Finished a usable v1 despite a hole.</small></span></button>
+            <button class="score s4 on4"><span class="sn">4</span><span>Recovered + cut<small>Named the hole, changed the bet, kill criterion.</small></span></button>
+            <div class="hint">Evidence the model used</div>
+            <textarea class="ev">“I would not stall the sprint for a perfect cut… The fourth month was change the bet, not try harder at the same bet.”</textarea>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn">Override to 3</button>
+              <button class="btn primary" onclick="go('voice')">Keep 4 · check voice</button>
+            </div>
+          </aside>
+        </div>
+        <div class="g-foot">
+          <span><span class="kbd">1</span>–<span class="kbd">4</span> override</span>
+          <span class="spacer"></span>
+          <span>Résumé still hidden · context unlocks after lock</span>
+        </div>
+      </div>
+
+      <div id="voice" class="view">
+        <h1>Voice integrity · listen, don’t verdict</h1>
+        <p class="sub">Each answer is compared to <b>this person’s</b> intro (natural) and reading sample (read-aloud). A match to reading is a flag to hear — not “cheated with an LLM.”</p>
+        <div class="banner warn">Not a scored area. Accent, confidence, and personality are off-limits. Résumé still hidden. C-07 is clean. C-11 is the listen case.</div>
+        <div class="grid2">
+          <div class="card">
+            <h2>C-07 · Q1 Follow-through</h2>
+            <p class="hint">Delivery closer to their intro than to their reading sample.</p>
+            <div class="vtrack"><div class="lab">Intro · natural baseline <span>0:41</span></div><div class="wave live"></div></div>
+            <div class="vtrack"><div class="lab">Reading sample · read baseline <span>0:28</span></div><div class="wave read"></div></div>
+            <div class="vtrack"><div class="lab">Q1 answer · month four <span>1:12</span></div><div class="wave live"></div></div>
+            <p class="hint" style="margin-top:8px">Repairs, uneven chunks, same voice as intro. Transcript used for the Follow-through 4.</p>
+            <span class="chip on">No integrity flag</span>
+          </div>
+          <div class="card">
+            <h2>C-11 · Q1 Follow-through</h2>
+            <p class="hint">Possible scripted delivery — review.</p>
+            <div class="vtrack"><div class="lab">Intro · natural baseline <span>0:38</span></div><div class="wave live"></div></div>
+            <div class="vtrack"><div class="lab">Reading sample · read baseline <span>0:29</span></div><div class="wave read"></div></div>
+            <div class="vtrack"><div class="lab">Q1 answer · closer to reading <span>1:04</span></div><div class="wave flag"></div></div>
+            <div class="banner warn">Signals: long pause then paragraph fluency · pitch and rate closer to their reading clip than their intro · few repairs. Also possible: notes, rehearsal, anxiety, additional language.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn">Dismiss flag · notes likely</button>
+              <button class="btn">Possible TTS / other speaker</button>
+              <button class="btn primary" onclick="go('shortlist')">Keep flag · still score the work</button>
+            </div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:14px">A confirmed flag does not change the seven scores and cannot auto-reject. Integrity stays a human decision.</p>
+      </div>
+
+      <div id="shortlist" class="view">
+        <h1>Scores locked · now you may see context</h1>
+        <p class="sub">C-07 would often die in a résumé sift. The work said otherwise. Distance traveled is context — do not add or subtract points.</p>
+        <div class="banner warn">This is the first time reviewers see employers, school, or gaps. Do not rescoredown for the gap.</div>
+        <div class="grid2">
+          <div class="card">
+            <h2>C-07 · after lock</h2>
+            <p class="hint" style="margin:6px 0 10px">Follow-through 4 · Learn 4 · Judge 4 · Task 3</p>
+            <div class="resume">
+              <b>Résumé now visible</b><br />
+              Bootcamp 2022 · 2 years B2B PM at a 40-person company<br />
+              14-month caregiving gap · no FAANG · no CS degree
+            </div>
+            <p class="hint" style="margin-top:10px"><span class="ctx">distance traveled</span> — context only. Explains the paper. Does not change the 4.</p>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" checked /> Advance to live interview</label>
+          </div>
+          <div class="card">
+            <h2>C-14 · after lock</h2>
+            <p class="hint" style="margin:6px 0 10px">Task 4 · Judge 4 · Follow-through 3</p>
+            <div class="resume">
+              <b>Résumé now visible</b><br />
+              CS, large-cap PM 6 years · linear path · no gaps
+            </div>
+            <p class="hint" style="margin-top:10px">Strong packet. Pedigree is not a bonus on top of the scores.</p>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" checked /> Advance to live interview</label>
+          </div>
+        </div>
+        <p class="hint" style="margin:14px 0">AI suggested 6. You are sending the work, including the person the résumé would have eliminated.</p>
+        <button class="btn good">Send 2 to live interview · write back to Greenhouse</button>
+      </div>
+    </section>
+  </div>
+  <script>
+    const flowMap = { create:0, draft:1, publish:2, apply:3, vintro:3, vread:3, vq1:3, done:3, inbox:4, grade:4, voice:4, shortlist:5 };
+    function setFlow(id) {
+      document.querySelectorAll('#flowbar span').forEach((s,i) => {
+        s.className = i === (flowMap[id] ?? 0) ? 'on' : (i < (flowMap[id] ?? 0) ? 'done' : '');
+      });
+    }
+    function go(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === id));
+      document.querySelectorAll('.nav button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === id));
+      setFlow(id);
+      history.replaceState(null, '', '#' + id);
+    }
+    function persona(which) {
+      document.getElementById('p-hm').classList.toggle('on', which==='hm');
+      document.getElementById('p-ap').classList.toggle('on', which==='ap');
+      document.getElementById('p-hr').classList.toggle('on', which==='hr');
+      document.getElementById('nav-hm').style.display = which==='hm' ? '' : 'none';
+      document.getElementById('nav-ap').style.display = which==='ap' ? '' : 'none';
+      document.getElementById('nav-hr').style.display = which==='hr' ? '' : 'none';
+      if (which==='hm') go('create');
+      if (which==='ap') go('apply');
+      if (which==='hr') go('inbox');
+    }
+    document.querySelectorAll('.nav button[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+    const start = (location.hash || '#create').slice(1);
+    if (document.getElementById(start)) {
+      if (['apply','vintro','vread','vq1','done'].includes(start)) { document.getElementById('p-hm').classList.remove('on'); document.getElementById('p-ap').classList.add('on'); document.getElementById('nav-hm').style.display='none'; document.getElementById('nav-ap').style.display=''; go(start); }
+      else if (['inbox','grade','voice','shortlist'].includes(start)) { document.getElementById('p-hm').classList.remove('on'); document.getElementById('p-hr').classList.add('on'); document.getElementById('nav-hm').style.display='none'; document.getElementById('nav-hr').style.display=''; go(start); }
+      else go(start);
+    }
+  </script>
+</body>
+</html>
