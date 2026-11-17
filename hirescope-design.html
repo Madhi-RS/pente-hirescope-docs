@@ -255,6 +255,113 @@
     .tbl th { font-weight: 500; color: var(--muted); font-size: 11px; background: #faf6f0; }
     .tbl tr:last-child td { border-bottom: 0; }
     .mono { font-family: "IBM Plex Mono", monospace; }
+
+    /* ---- Pente Sites visual system -------------------------------------------------
+       Crisp editorial typography, monochrome surfaces and one intentional signal colour.
+       These rules layer over the functional mockup so its workflows remain unchanged. */
+    :root {
+      --ink: #111111;
+      --ink-soft: #4d4d4a;
+      --muted: #787873;
+      --paper: #f7f7f5;
+      --card: #ffffff;
+      --line: #e4e4e0;
+      --line-strong: #c9c9c2;
+      --teal: #b4552e;
+      --teal-dark: #84391d;
+      --teal-soft: #f7e9e2;
+      --gold: #f2d7c7;
+      --s1: #b42318;
+      --s2: #a65b1f;
+      --s3: #b4552e;
+      --s4: #1d6b4d;
+      --shadow: 0 10px 30px rgba(17,17,17,.055);
+    }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -.01em; }
+    h1, .landing-copy h1, .preview-title, .brand-name, .login-brand h1 { font-family: Fraunces, Georgia, serif; letter-spacing: -.045em; }
+    .mono, .state, .landing-eyebrow, .pa-kicker, .nav .sec, .demo-creds .t { font-family: "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .035em; }
+
+    /* Public-facing mockup */
+    .landing { background: #fff; position: relative; isolation: isolate; }
+    .landing::before { content:""; position:absolute; z-index:-1; right:-18vw; top:8vh; width:70vw; height:70vw; border-radius:50%; background:radial-gradient(circle, #f7e9e2 0 20%, #fbf2ed 20.2% 34%, transparent 34.2%); opacity:.9; }
+    .landing-nav { max-width: 1280px; padding: 22px 40px; border-bottom: 1px solid var(--line); }
+    .landing-brand { gap: 9px; }
+    .landing-brand .brand-name { font-size: 21px; }
+    .brand-name span, .login-brand h1 span { color: var(--teal); }
+    .landing-brand .mark, .sidebar .mark, .login-brand .mark { background: var(--ink); border-color: var(--ink); border-radius: 2px; }
+    .mark::before { border-color: #fff; }
+    .mark::after { background: var(--teal); }
+    .landing-main { max-width: 1280px; grid-template-columns: minmax(0,1.15fr) minmax(390px,.85fr); padding: 74px 40px 76px; gap: 70px; }
+    .landing-eyebrow { color: var(--teal); font-size: 10px; font-weight: 600; }
+    .landing-eyebrow::before { width: 18px; background: var(--teal); }
+    .landing-copy h1 { max-width: 760px; font-size: clamp(48px,5.4vw,78px); line-height: .99; }
+    .landing-copy h1 em { color: var(--teal); font-style: italic; }
+    .landing-copy > p { max-width: 600px; color: var(--ink-soft); font-size: 16px; line-height: 1.65; }
+    .landing-points { gap: 20px; font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .03em; font-size: 10px; }
+    .landing-points span::before { content: "↗"; color: var(--teal); }
+    .landing-preview::before { inset: -20px 16px 20px -18px; border-color: var(--teal); border-radius: 0; transform: rotate(-3deg); }
+    .preview-card { border-radius: 0; border-color: var(--ink); padding: 22px; box-shadow: 14px 14px 0 #111; }
+    .preview-title { font-size: 22px; }
+    .preview-stat { border-radius: 0; background: #f7f7f5; }
+    .preview-stat b { font-family: Fraunces, Georgia, serif; }
+    .preview-avatar { border-radius: 0; background: var(--teal-soft); color: var(--teal-dark); }
+
+    /* App shell and controls */
+    .app { grid-template-columns: 258px 1fr; background: var(--paper); }
+    .sidebar { background: var(--ink); padding: 24px 16px 16px; border-right: 1px solid #2b2b2b; }
+    .brand { padding: 0 8px 14px; border-bottom: 1px solid #31312f; }
+    .brand-name { color: #fff; font-size: 20px; }
+    .who { border-radius: 2px; background: #242422; }
+    .who button { border-radius: 1px; }
+    .who button.on, .nav button.active { background: var(--teal); color: #fff; }
+    .nav .sec { margin-top: 18px; color: #898984; font-size: 9px; }
+    .nav button { position: relative; border-radius: 1px; color: #d6d6d1; padding: 9px 10px; }
+    .nav button:hover { background: #2d2d2a; }
+    .nav button.active::before { content:""; position:absolute; left:-16px; top:0; bottom:0; width:3px; background:#fff; }
+    .side-role { border-radius: 2px; background:#1a1a18; border-color:#343431; }
+    .topbar { min-height: 64px; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); padding: 10px 30px; }
+    .crumbs { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .02em; }
+    .view { padding: 32px 34px 56px; }
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 { letter-spacing: -.02em; }
+    .sub { font-size: 13px; line-height: 1.6; }
+    .card, .stat, .flow-node, .test, .tbl { border-radius: 2px; box-shadow: none; }
+    .card { padding: 18px; }
+    .stat { border-top: 3px solid var(--ink); }
+    .stat .n { font-size: 30px; }
+    .tbl { border-radius: 2px; }
+    .tbl th { background: #f3f3f0; font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing:.04em; font-size:10px; }
+    input[type=text], input[type=email], input[type=password], select, textarea { border-radius: 2px; background:#fff; transition:border-color .16s, box-shadow .16s; }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(180,85,46,.12); }
+    .btn { border-radius: 2px; border-color: var(--ink); font-weight: 600; padding: 8px 13px; }
+    .btn:hover { background: #f0f0ec; }
+    .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn.primary:hover { background: var(--teal); border-color: var(--teal); }
+    .btn.good { background: #1d6b4d; border-color:#1d6b4d; }
+    .chip, .state, .ai, .ctx { border-radius: 2px; }
+    .chip.on, .ai { background: var(--teal-soft); border-color:#e8c5b4; color:var(--teal-dark); }
+    .state { font-size:10px; letter-spacing:.02em; }
+    .state.readonly { background:var(--teal-soft); border-color:#e8c5b4; color:var(--teal-dark); }
+    .banner { border-radius:2px; background:var(--teal-soft); border-left:3px solid var(--teal); border-top-color:#e8c5b4; border-right-color:#e8c5b4; border-bottom-color:#e8c5b4; color:#5c2a17; }
+    .tabs button.on { color:var(--ink); border-bottom-color:var(--teal); }
+    .stepper .step.on .dot { background:var(--teal); border-color:var(--teal); }
+    .stepper .step.done .dot { background:var(--teal-soft); border-color:#e8c5b4; color:var(--teal-dark); }
+    .credential-box { background:var(--ink); border-radius:2px; }
+
+    /* Entry screens inherit the same product identity. */
+    .entry-wrap, .login-wrap { background: #f7f7f5; position:relative; }
+    .entry-wrap::before, .login-wrap::before { content:"PENTE AI / HIRING INTELLIGENCE"; position:absolute; top:28px; left:34px; color:var(--teal); font:600 10px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
+    .entry-card, .login-card { border-radius:2px; border-top:3px solid var(--ink); box-shadow:10px 10px 0 rgba(17,17,17,.06); }
+    .entry-option { border-radius:2px; }
+    .entry-option:hover { border-color:var(--teal); background:#fdf8f5; }
+    .entry-option .option-icon { border-radius:2px; background:var(--teal-soft); color:var(--teal-dark); }
+    .login-brand h1 { font-size:27px; }
+
+    @media (max-width: 900px) {
+      .landing-main { grid-template-columns:1fr; padding:54px 28px; }
+      .landing-nav { padding:18px 28px; }
+      .app { grid-template-columns:218px 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -270,11 +377,11 @@
     </nav>
     <section class="landing-main">
       <div class="landing-copy">
-        <div class="landing-eyebrow">A calmer hiring workflow</div>
-        <h1>Make every hire <em>clearer</em> from first application to final decision.</h1>
-        <p>HireScope gives candidates, hiring teams, and reviewers one structured place to move work forward—with the right context, permissions, and accountability at every stage.</p>
+        <div class="landing-eyebrow">Pente AI · hiring intelligence</div>
+        <h1>A hiring decision is no longer a spreadsheet. It is a <em>conversation</em> built on evidence.</h1>
+        <p>HireScope turns every application, interview, and review into a clear, accountable conversation—so the right people can move forward with confidence.</p>
         <div class="landing-ctas">
-          <button class="btn primary" onclick="showEntry()">Get started <span aria-hidden="true">→</span></button>
+          <button class="btn primary" onclick="showEntry()">Explore the workflow <span aria-hidden="true">→</span></button>
           <button class="btn" onclick="showLogin()">I already have an account</button>
         </div>
         <div class="landing-points"><span>Structured hiring stages</span><span>Role-based access</span><span>Traceable decisions</span></div>
@@ -295,9 +402,9 @@
   <div id="entry-screen" class="entry-wrap" style="display:none">
     <div class="entry-card">
       <div class="login-brand"><div class="mark"></div><h1>Welcome to <span>HireScope</span></h1></div>
-      <p class="sub">Sign in with your Keycloak identity, or start an organization/user registration. The Platform Admin account is provisioned during deployment and is never publicly registered.</p>
+      <p class="sub">Sign in with your Keycloak identity, or start an organization/user registration.</p>
       <div class="entry-options">
-        <button class="entry-option" onclick="showLogin('general')"><div class="option-icon">+</div><b>Login</b><span>Keycloak authenticates Platform Admin, Organization Admin, job participants, and applicants.</span></button>
+        <button class="entry-option" onclick="showLogin('general')"><div class="option-icon">+</div><b>Login</b><span>Keycloak authenticates Org Admin, Org Owner, job participants, and applicants.</span></button>
         <button class="entry-option" onclick="showRegistration()"><div class="option-icon">+</div><b>Organization / user registration</b><span>Apply for an account or submit an organisation onboarding request.</span></button>
       </div>
       <button class="link-btn" onclick="showLanding()">← Back to home</button>
@@ -311,7 +418,7 @@
         <div class="mark"></div>
         <h1 id="login-title">HireScope <span>login</span></h1>
       </div>
-      <p class="sub" id="login-copy">Continue through Keycloak. Platform Admin access is determined only after successful authentication; it is not a public registration path.</p>
+      <p class="sub" id="login-copy">Continue through Keycloak to the appropriate organisation workspace.</p>
 
       <label class="f" for="login-email">Email</label>
       <input type="email" id="login-email" placeholder="hm@pente.ai" autocomplete="off" />
@@ -335,22 +442,18 @@
         <table>
           <tr><td>Hiring Manager · Pente.AI</td><td><code>hm@pente.ai</code></td></tr>
           <tr><td>HR Reviewer · Pente.AI</td><td><code>hr@pente.ai</code></td></tr>
-          <tr><td>HR Reviewer requester (pending) · Pente.AI</td><td><code>anita@example.com</code></td></tr>
           <tr><td>Applicant · Pente.AI</td><td><code>applicant@pente.ai</code></td></tr>
           <tr><td>Interviewer · Pente.AI</td><td><code>interviewer@pente.ai</code></td></tr>
-          <tr><td>Organisation Admin · Pente.AI</td><td><code>orgadmin@pente.ai</code></td></tr>
-          <tr><td>Super Admin · Pente.AI</td><td><code>superadmin@pente.ai</code></td></tr>
-          <tr><td>Platform Admin</td><td><code>admin@hirescope.test</code></td></tr>
+          <tr><td>Org Owner · Pente.AI</td><td><code>orgadmin@pente.ai</code></td></tr>
+          <tr><td>Org Admin · Pente.AI</td><td><code>superadmin@pente.ai</code></td></tr>
         </table>
         <div class="quick">
           <button class="btn" onclick="quick('hm')">Hiring mgr</button>
           <button class="btn" onclick="quick('hr')">HR</button>
-          <button class="btn" onclick="quick('anita')">HR Reviewer requester</button>
           <button class="btn" onclick="quick('ap')">Applicant</button>
           <button class="btn" onclick="quick('in')">Interviewer</button>
-          <button class="btn" onclick="quick('oa')">Org admin</button>
-          <button class="btn" onclick="quick('sa')">Super admin</button>
-          <button class="btn" onclick="quick('pa')">Platform admin</button>
+          <button class="btn" onclick="quick('oa')">Org Owner</button>
+          <button class="btn" onclick="quick('sa')">Org Admin</button>
         </div>
       </div>
     </div>
@@ -379,19 +482,9 @@
        <input type="password" id="register-password" placeholder="At least 10 characters" autocomplete="new-password" />
        <label class="f" for="register-path">Registration type</label>
        <select id="register-path"><option value="user">User / Applicant registration</option><option value="organization">Organization onboarding request</option></select>
-       <label class="req" style="margin-top:12px"><input type="checkbox" id="register-staff-request" onchange="toggleStaffRequest()" /><div><b>I am not registering as an applicant</b><div class="hint">I need staff access to an existing organisation.</div></div></label>
-       <div class="card" id="register-staff-fields" style="margin-top:12px;padding:12px;display:none">
-         <h2>Existing organisation access request</h2>
-         <p class="hint" style="margin-top:4px">Enter the workspace URL supplied by the organisation and request organisation-level authority. Your access remains pending until its Organization Admin reviews proof and comment.</p>
-         <label class="f" for="register-staff-org">Known organisation workspace</label><input id="register-staff-org" type="text" value="pente.hirescope.com" />
-         <label class="f" for="register-staff-role">Requested authority</label><select id="register-staff-role"><option value="rc">Requisition Creator — organisation-level</option><option value="hr">HR Reviewer — organisation-level</option></select>
-         <label class="f" for="register-staff-proof">Supporting proof</label><input id="register-staff-proof" type="text" placeholder="Authorisation document URL or attachment" />
-         <label class="f" for="register-staff-comment">Comment</label><textarea id="register-staff-comment" placeholder="Example: I am the Hiring Manager for this company."></textarea>
-         <div class="banner">Requisition Creator does not select a Job Opening at registration. After HR approves a requisition, its creator creates the opening and receives the opening-specific Hiring Manager role. An HR Reviewer is organisation-level and has no Job Opening.</div>
-       </div>
        <div class="card" id="register-onboarding-fields" style="margin-top:12px;padding:12px">
          <h2>Organization onboarding information</h2>
-         <p class="hint" style="margin-top:4px">Complete these fields when requesting a new organization workspace. They create a pending request, not a workspace or Platform Admin account. The onboarding-realm user remains <b>unassigned</b> until membership is created on approval.</p>
+         <p class="hint" style="margin-top:4px">Complete these fields when requesting a new organization workspace. They create a pending request, not an active workspace. The onboarding-realm user remains <b>unassigned</b> until membership is created on approval.</p>
          <label class="f">Organization name</label><input id="register-organization-name" type="text" placeholder="Organization name" />
          <label class="f">Supporting proof</label><input id="register-proof" type="text" placeholder="Proof document URL or attachment" />
          <label class="f">Comment / reason</label><textarea id="register-onboarding-comment" placeholder="Why do you need an organisation workspace?"></textarea>
@@ -451,7 +544,7 @@
         <div class="sec">Hiring manager</div>
         <button class="active" data-view="hm-list">Dashboard</button>
         <div class="sec">Requisitions</div>
-        <button data-view="hm-req">1. Create requisition</button>
+        <button data-view="hm-req">1. New role creation</button>
         <button data-view="hm-req-status">2. Requisition status</button>
         <div class="sec">Job openings</div>
         <button data-view="hm-jobs">3. My job openings</button>
@@ -463,7 +556,7 @@
         <div class="sec">Opening setup</div>
         <button data-view="hm-open">8. Create job opening</button>
         <button data-view="hm-config">9. Assessment configuration</button>
-        <button data-view="hm-criteria">10. Pre-screen criteria</button>
+        <button data-view="hm-criteria">10. Interview readiness instructions</button>
         <button data-view="hm-publish">11. Publish &amp; version</button>
         <button data-view="hm-requests">12. Action requests</button>
       </nav>
@@ -500,8 +593,6 @@
         <div class="sec">Current actions</div>
         <button data-view="ap-myapps">My applications &amp; next action</button>
         <div class="hint" style="padding:6px 10px 10px">Assessment, interview, decision, and onboarding views appear only when the server confirms the configured stage and application status. They are not general navigation destinations.</div>
-        <div class="sec">Workspace access</div>
-        <button data-view="ap-role">Request / status</button>
       </nav>
       <nav class="nav" id="nav-in" style="display:none">
         <div class="sec">Interviewer</div>
@@ -514,7 +605,7 @@
         <button data-view="in-submit">4. Submission</button>
       </nav>
       <nav class="nav" id="nav-oa" style="display:none">
-        <div class="sec">Organization admin</div>
+        <div class="sec">Org Owner</div>
         <button data-view="oa-dashboard">Dashboard</button>
         <div class="sec">Users / members</div>
         <button data-view="oa-pending">Pending / to be verified</button>
@@ -528,27 +619,17 @@
         <button data-view="oa-profile">Profile / change password</button>
       </nav>
       <nav class="nav" id="nav-sa" style="display:none">
-        <div class="sec">Super Admin</div>
+        <div class="sec">Org Admin</div>
         <button class="active" data-view="sa-dashboard">SA-1. Dashboard</button>
         <div class="sec">Organization ownership</div>
         <button data-view="sa-onboarding">SA-2. Organization onboarding</button>
         <button data-view="sa-onboarding-status">SA-3. Provisioning status</button>
-        <div class="sec">Organization Admin</div>
+        <div class="sec">Org Owner</div>
         <button data-view="sa-admin-management">SA-4. Admin management</button>
-        <button data-view="sa-replace-admin">SA-5. Replace Organization Admin</button>
+        <button data-view="sa-replace-admin">SA-5. Replace Org Owner</button>
         <div class="sec">Records</div>
         <button data-view="sa-audit">SA-6. Audit history</button>
       </nav>
-      <nav class="nav" id="nav-pa" style="display:none">
-        <div class="sec">Platform administration</div>
-        <button class="active" data-view="pa-dashboard">Dashboard</button>
-        <div class="sec">Organization registrations</div>
-        <button data-view="pa-registrations">Pending / history</button>
-        <div class="sec">Workspaces</div>
-        <button data-view="pa-workspaces">Workspace list</button>
-        <button data-view="pa-profile">Profile / Keycloak password</button>
-      </nav>
-
       <div class="side-role">
         <div class="k">Signed in as</div>
         <div class="v" id="user-name">—</div>
@@ -588,7 +669,6 @@
             <table class="tbl">
               <thead><tr><th>User</th><th>Email</th><th>Requested role</th><th>Job opening</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
               <tbody>
-                <tr><td><b>Anita Sharma</b></td><td>anita@example.com</td><td>HR Reviewer</td><td>Organization-level</td><td>04 Oct 2026</td><td><span class="state pending">PENDING</span></td><td><button class="btn" onclick="openOaVerify('RVR-101')">View / verify</button></td></tr>
                 <tr><td><b>Vikram Rao</b></td><td>vikram@example.com</td><td>Requisition Creator</td><td>Organisation-level</td><td>04 Oct 2026</td><td><span class="state pending">PENDING</span></td><td><button class="btn" onclick="openOaVerify('RVR-102')">View / verify</button></td></tr>
               </tbody>
             </table>
@@ -946,7 +1026,7 @@
         <div class="banner">The role switcher changes only Pente.AI roles for this authenticated realm. To use another organisation, log out, open that workspace URL, and authenticate in its separate Keycloak realm.</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
           <h2>My requisitions</h2>
-          <button class="btn primary" onclick="go('hm-req')">Create requisition</button>
+          <button class="btn primary" onclick="go('hm-req')">New role creation</button>
         </div>
         <table class="tbl" style="margin-top:12px">
           <thead><tr><th>Requisition</th><th>Role</th><th>Positions</th><th>State</th><th>Last updated</th><th></th></tr></thead>
@@ -975,7 +1055,7 @@
 
       <div id="hm-req" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>Create a workforce requisition</h1>
+          <h1>New role creation</h1>
           <span class="state draft" id="hm-req-pill">REQUISITION_DRAFT</span>
         </div>
         <p class="sub">Raise a hiring need. It becomes a job opening only after an authorised HR Reviewer approves it.</p>
@@ -993,10 +1073,18 @@
             <input type="text" value="1" />
             <label class="f">Employment type</label>
             <select><option>Full-time</option><option>Contract</option><option>Part-time</option></select>
+            <label class="f">Department / reporting line</label>
+            <input type="text" value="Product · reports to VP Product" />
+            <label class="f">Location &amp; work arrangement</label>
+            <select><option>Bengaluru · Hybrid (3 days in office)</option><option>Remote · India</option><option>On site · Bengaluru</option></select>
             <label class="f">Salary range</label>
             <input type="text" value="₹32L – ₹48L" />
             <label class="f">Required experience</label>
             <input type="text" value="4+ years product" />
+            <label class="f">Education expectation</label>
+            <input type="text" value="Bachelor's degree or equivalent practical experience" />
+            <label class="f">Preferred joining window</label>
+            <input type="text" value="0–60 days’ notice; HR review for exceptions" />
           </div>
           <div class="card">
             <label class="f">Business justification</label>
@@ -1004,31 +1092,47 @@
             <label class="f">Job description</label>
             <textarea style="min-height:74px">Own activation end to end. Diagnose trial-to-paid drop, pick one bet, ship a v1 others can build from.</textarea>
             <label class="f">Eligibility criteria (reviewed by HR, not an auto-gate)</label>
-            <textarea style="min-height:54px">Experience in consumer SaaS; shipping evidence over pedigree.</textarea>
+            <textarea aria-label="Eligibility criteria for Senior Product Manager" style="min-height:280px">Required / strongly relevant
+• Education: Bachelor’s degree or equivalent practical experience in product, business, engineering, design, or a related discipline.
+• Experience: 4–7 years in product management, including ownership of a customer-facing SaaS or digital-product outcome.
+• Product evidence: examples of identifying a problem, using customer or product data, making trade-offs, and shipping an outcome end to end.
+• Core skills: discovery, analytics, experiment design, stakeholder communication, and written product thinking.
+
+Working conditions
+• Location & model: Bengaluru, India · hybrid (minimum 3 days per week in the office). Remote applicants may be considered where the team can support the arrangement.
+• Availability: preferred joining window is 0–60 days’ notice. Longer notice periods may be considered against business need.
+• Employment eligibility: authorization to work in India, or an employer-supported path where available.
+
+Company parameters
+• Compensation band: ₹32L–₹48L total annual compensation, with final offer based on demonstrated scope, experience, internal equity, and location.
+• Standard employment checks: reference and background verification completed only after a conditional offer and in accordance with applicable law.
+
+HR review guidance
+• Preferred qualifications, career breaks, non-linear experience, location constraints, notice period, and compensation expectations require a human review. Do not use age, gender, marital status, caste, religion, disability, race, or any other protected characteristic in screening or decisions.</textarea>
+            <p class="hint" style="margin-top:6px">This is a review guide for HR and the hiring panel. It can surface context for discussion, but it must never automatically reject, rank, or invite an applicant.</p>
           </div>
         </div>
         <div class="card" style="margin-top:16px">
           <div style="display:flex;justify-content:space-between;align-items:center"><h2>Stages, sections, questions &amp; weightage</h2><span class="chip warn">Configured here · not hard-coded</span></div>
-          <p class="hint" style="margin-top:6px">The recruitment sequence is job-specific. Stage types are predefined; presence, order, sections, questions, and weightage are configured for this position and reviewed by HR before approval.</p>
+          <p class="hint" style="margin-top:6px">The recruitment sequence is job-specific. Add, name, reorder, and configure its stages here; the selected sequence, sections, questions, timing, and weightage carry into the job opening.</p>
           <div class="grid2" style="margin-top:12px">
             <div>
-              <div class="stepper" style="margin-top:4px">
+              <div class="test"><b>Add a stage</b><div class="grid2" style="margin-top:8px"><div><label class="f">Stage type</label><select id="req-stage-type" onchange="toggleCustomStageName()"><option>Pre-screening</option><option>Online assessment</option><option>Online interview</option><option>Live interview</option><option>HR interview</option><option>Other</option></select></div><div><label class="f">Custom stage name (for Other)</label><input id="req-custom-stage" type="text" placeholder="e.g. Online aptitude" disabled /></div></div><button class="btn" style="margin-top:10px" onclick="addRequisitionStage()">Add selected stage</button></div>
+              <div style="margin-top:10px"><b>Configured stages</b><div id="req-stage-editor"><p class="hint">No stages configured yet. Add one stage at a time; the same stage type can be used more than once.</p></div></div>
+              <div class="stepper" style="margin-top:4px;display:none">
                 <div class="step done"><div class="dot">1</div><span>Pre-screening</span></div><div class="conn"></div>
                 <div class="step on"><div class="dot">2</div><span>Online assessment</span></div><div class="conn"></div>
                 <div class="step"><div class="dot">3</div><span>Live interview</span></div><div class="conn"></div>
                 <div class="step"><div class="dot">4</div><span>HR interview</span></div>
               </div>
-              <div class="test" style="margin-top:10px"><b>Online assessment → sections</b><div class="hint">Self Introduction · Reading · Technical Questions (4 questions).</div></div>
-              <div class="test"><b>Live interview → sections</b><div class="hint">2 interviewers (John Smith · Priya Kumar) · Technical Knowledge 40% · Communication 20% · Problem Solving 20% · Role Fit 20%.</div></div>
-              <div class="test"><b>Other / custom stage</b><div class="hint">Configure its name, mode, conductor, evaluator/count, criteria, total marks, passing mark, timing, completion condition, and weightage.</div></div>
-              <p class="hint" style="margin-top:8px">Stage → section → question is data, not application logic. Add or reorder stages, sections, and questions per position.</p>
+              <div class="test" style="margin-top:10px;display:none"><b>Online assessment → sections</b><div class="hint">Self Introduction · Reading · Technical Questions (4 questions).</div></div>
+              <div class="test" style="display:none"><b>Live interview → sections</b><div class="hint">2 interviewers (John Smith · Priya Kumar) · Technical Knowledge 40% · Communication 20% · Problem Solving 20% · Role Fit 20%.</div></div>
+              <div class="test" style="display:none"><b>Other / custom stage</b><div class="hint">Configure its name, mode, conductor, evaluator/count, criteria, total marks, passing mark, timing, completion condition, and weightage.</div></div>
+              <p class="hint" style="margin-top:8px">Stage → section → question is editable data, not application logic. Add the same type again whenever this role needs a separate stage.</p>
             </div>
             <div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><b>Stage weightage</b><span class="mono" id="req-weight-total">100%</span></div>
-              <label class="f">Pre-screening %</label><input type="number" id="req-w1" value="20" min="0" max="100" oninput="recalcRequisitionWeight()" />
-              <label class="f">Online assessment %</label><input type="number" id="req-w2" value="25" min="0" max="100" oninput="recalcRequisitionWeight()" />
-              <label class="f">Live interview %</label><input type="number" id="req-w3" value="40" min="0" max="100" oninput="recalcRequisitionWeight()" />
-              <label class="f">HR interview %</label><input type="number" id="req-w4" value="15" min="0" max="100" oninput="recalcRequisitionWeight()" />
+              <div style="display:flex;justify-content:space-between;align-items:center"><b>Stage weightage</b><span class="mono" id="req-weight-total">0%</span></div>
+              <div id="req-weight-editor"><p class="hint">No stage weightage yet. A weight field appears here when you add a stage.</p></div>
               <div class="banner warn" id="req-weight-note" style="margin-top:10px">Weights must total 100%. They rank and guide prioritisation only — never a single hire score, and never an automatic advance or rejection.</div>
             </div>
           </div>
@@ -1046,10 +1150,8 @@
             </div>
             <div>
               <div style="display:flex;justify-content:space-between;align-items:center"><b>Evaluation sections &amp; weightage</b><span class="mono" id="li-weight-total">100%</span></div>
-              <label class="f">Technical Knowledge %</label><input type="number" id="li-w1" value="40" min="0" max="100" oninput="recalcLiveWeight()" />
-              <label class="f">Communication Skills %</label><input type="number" id="li-w2" value="20" min="0" max="100" oninput="recalcLiveWeight()" />
-              <label class="f">Problem Solving %</label><input type="number" id="li-w3" value="20" min="0" max="100" oninput="recalcLiveWeight()" />
-              <label class="f">Role Fit %</label><input type="number" id="li-w4" value="20" min="0" max="100" oninput="recalcLiveWeight()" />
+              <div id="li-section-editor"><label class="f">Evaluation section and weightage</label><div class="req"><input type="text" value="Technical Knowledge" /><input type="number" id="li-w1" data-li-weight value="40" min="0" max="100" oninput="recalcLiveWeight()" /></div><div class="req"><input type="text" value="Communication Skills" /><input type="number" id="li-w2" data-li-weight value="20" min="0" max="100" oninput="recalcLiveWeight()" /></div><div class="req"><input type="text" value="Problem Solving" /><input type="number" id="li-w3" data-li-weight value="20" min="0" max="100" oninput="recalcLiveWeight()" /></div><div class="req"><input type="text" value="Role Fit" /><input type="number" id="li-w4" data-li-weight value="20" min="0" max="100" oninput="recalcLiveWeight()" /></div></div>
+              <button class="btn" style="margin-top:10px" onclick="addLiveEvaluationSection()">Add evaluation section</button>
               <div class="banner warn" id="li-weight-note" style="margin-top:10px">Evaluation weightage must total 100%.</div>
               <p class="hint" style="margin-top:8px">Rating scale 0–5 per section, weighted by its %. Interviewers see this framework before conducting the interview and cannot modify it.</p>
             </div>
@@ -1066,42 +1168,25 @@
           <h1>Requisition status</h1>
           <span class="state pending" id="req-state-pill">REQUISITION_PENDING_APPROVAL</span>
         </div>
-        <div class="stepper">
-          <div class="step" id="reqs-draft"><div class="dot">1</div><span>Draft</span></div><div class="conn"></div>
-          <div class="step" id="reqs-pending"><div class="dot">2</div><span>Pending approval</span></div><div class="conn"></div>
-          <div class="step" id="reqs-approved"><div class="dot">3</div><span>Approved</span></div><div class="conn"></div>
-          <div class="step" id="reqs-opening"><div class="dot">4</div><span>Opening</span></div>
-        </div>
-
-        <div id="req-block-pending">
-          <div class="banner warn">The submitted version is read-only while under review. HR will approve or return it with a required comment.</div>
-          <div class="card">
-            <h2>Submitted requisition · Senior Product Manager</h2>
-            <p class="hint" style="margin-top:6px">Role 1 · Full-time · ₹32L–₹48L · 4+ years product · Growth activation</p>
-            <div class="grid2" style="margin-top:10px">
-              <div class="test"><b>Business justification</b><p class="hint">Growth activation is below target after the checkout redesign…</p></div>
-              <div class="test"><b>Job description</b><p class="hint">Own activation end to end…</p></div>
-            </div>
-            <p class="hint" style="margin-top:10px">Submitted version locked. Edits require HR to return the requisition first.</p>
+        <div class="card" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><div><h2>Sample requisitions</h2><p class="hint" style="margin-top:4px">A requisition remains visible throughout its lifecycle. Filter by status or open a record to review its details.</p></div><div style="display:flex;gap:8px;align-items:end"><div><label class="f">Status</label><select id="sample-req-filter" onchange="filterSampleRequisitions(this.value)"><option value="all">All statuses</option><option value="approved">Approved</option><option value="pending">Pending approval</option><option value="draft">Draft</option><option value="returned">Returned for changes</option><option value="suspended">Suspended</option></select></div><button class="btn" onclick="go('hm-req')">New role creation</button></div></div>
+          <div style="overflow-x:auto;margin-top:12px">
+            <table class="tbl">
+              <thead><tr><th>Requisition</th><th>Role</th><th>Positions</th><th>Version</th><th>Status</th><th>Last activity</th><th></th></tr></thead>
+              <tbody>
+                <tr data-req-status="pending"><td class="mono">REQ-1842</td><td>Senior Product Manager</td><td>1</td><td>v1</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Submitted to HR · 08 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
+                <tr data-req-status="draft"><td class="mono">REQ-1841</td><td>Staff Engineer</td><td>2</td><td>v1</td><td><span class="state draft">DRAFT</span></td><td>Saved by Hiring Manager · 07 Oct 2026</td><td><button class="btn" onclick="go('hm-req')">View</button></td></tr>
+                <tr data-req-status="pending"><td class="mono">REQ-1840</td><td>Data Analyst</td><td>1</td><td>v2</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Resubmitted to HR · 06 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
+                <tr data-req-status="returned"><td class="mono">REQ-1839</td><td>Product Designer</td><td>1</td><td>v1</td><td><span class="state rejected">RETURNED_FOR_CHANGES</span></td><td>HR comment received · 05 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
+                <tr data-req-status="suspended"><td class="mono">REQ-1838</td><td>QA Engineer</td><td>2</td><td>v1</td><td><span class="state suspended">SUSPENDED</span></td><td>Headcount paused · 04 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
+                <tr data-req-status="approved"><td class="mono">REQ-1837</td><td>Senior React Developer</td><td>2</td><td>v1</td><td><span class="state approved">REQUISITION_APPROVED</span></td><td>Approved by HR · 03 Oct 2026</td><td><button class="btn" onclick="go('hm-open')">View</button></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <div id="req-block-rejected" style="display:none">
-          <div class="banner err">Returned by HR. You were notified by email. The requisition is editable again — revise and resubmit.</div>
-          <div class="card">
-            <h2>HR comment (required on return)</h2>
-            <p id="req-comment-text" style="margin-top:6px;color:var(--ink-soft)"></p>
-            <button class="btn primary" style="margin-top:12px" onclick="resubmitReq()">Edit &amp; resubmit</button>
-          </div>
-        </div>
-
-        <div id="req-block-approved" style="display:none">
-          <div class="banner">Approved → REQUISITION_APPROVED. Approved headcount is now the opening limit.</div>
-          <div class="card">
-            <h2>Approved · ready to open</h2>
-            <p class="hint" style="margin-top:6px">Only an approved requisition can create an opening.</p>
-            <button class="btn primary" style="margin-top:12px" onclick="go('hm-open')">Create job opening →</button>
-          </div>
+        <div class="card" style="margin-top:14px">
+          <div class="req"><div><b>Approved requisitions ready for an opening</b><div class="hint">The opening inherits its role, headcount, work arrangement, eligibility, stages, weights, and live-interview sections from the approved requisition.</div></div><span class="state approved">1 READY</span></div>
+          <div class="req"><div><b class="mono">REQ-1837 · Senior React Developer</b><div class="hint">2 positions · Bengaluru hybrid · approved v1 · stage configuration available to refine on the opening draft.</div></div><button class="btn primary" onclick="openApprovedRequisition()">Create job opening</button></div>
         </div>
       </div>
 
@@ -1114,16 +1199,42 @@
         <div class="banner warn">HR approves the opening/panel package, then the Hiring Manager—not HR—publishes it.</div>
 
         <div class="tabs" id="open-tabs">
-          <button class="on" data-tab="pane-pack" onclick="tab('open-tabs','pane-pack')">FairPack</button>
+          <button class="on" data-tab="pane-opening" onclick="tab('open-tabs','pane-opening')">Opening</button>
+          <button data-tab="pane-pack" onclick="tab('open-tabs','pane-pack')">FairPack</button>
           <button data-tab="pane-config" onclick="tab('open-tabs','pane-config')">Assessment configuration</button>
-          <button data-tab="pane-screen" onclick="tab('open-tabs','pane-screen')">Pre-screen criteria</button>
+          <button data-tab="pane-screen" onclick="tab('open-tabs','pane-screen')">Interview readiness instructions</button>
           <button data-tab="pane-panel" onclick="tab('open-tabs','pane-panel')">Interviewer panel</button>
+          <button data-tab="pane-stage" onclick="tab('open-tabs','pane-stage')">Stage controls</button>
         </div>
 
-        <div class="tabpane on" id="pane-pack">
+        <div class="tabpane on" id="pane-opening">
+          <div class="grid2">
+            <div class="card">
+              <h2>Opening details</h2>
+              <label class="f">Opening title</label><input type="text" value="Senior React Developer" />
+              <label class="f">Requisition / version</label><input type="text" value="REQ-1837 · approved v1" disabled />
+              <label class="f">Location &amp; work model</label><select><option>Bengaluru · Hybrid (3 days in office)</option><option>Remote · India</option><option>On site · Bengaluru</option></select>
+              <label class="f">Application window</label><input type="text" value="8–18 October 2026 · 23:59 IST" />
+              <label class="f">Open positions</label><input type="number" value="2" min="1" />
+            </div>
+            <div class="card">
+              <h2>Publication &amp; approval</h2>
+              <label class="f">Visibility</label><select><option>Public careers page + selected channels</option><option>Internal only</option><option>Referral only</option></select>
+              <label class="f">Posting channels</label><input type="text" value="Careers page · LinkedIn · Employee referral" />
+              <label class="f">Closing behaviour</label><select><option>Close automatically at deadline or capacity</option><option>Manual close by Hiring Manager</option></select>
+              <label class="f">Publish state</label><input type="text" value="OPENING_DRAFT · requires HR approval" disabled />
+              <div class="banner" style="margin-top:12px">Opening configuration is versioned. HR approves the opening and panel package first; only the Hiring Manager can publish the approved version.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabpane" id="pane-pack">
           <div class="grid2">
             <div class="card">
               <div style="display:flex;justify-content:space-between"><h2>Seven scored areas</h2><span class="ai">AI drafted</span></div>
+              <p class="hint" style="margin-top:6px">Choose evidence areas for this opening. Names, evidence guidance, and enabled status are editable before the opening is submitted for approval.</p>
+              <div id="fairpack-editor"><div class="req"><input type="checkbox" checked /><input type="text" value="React component and UI delivery" /><span class="state readonly">WORK SAMPLE</span></div><div class="req"><input type="checkbox" checked /><input type="text" value="Frontend architecture and performance reasoning" /><span class="state readonly">ASSESSMENT</span></div></div>
+              <button class="btn" style="margin:10px 0" onclick="addFairPackArea()">Add evidence area</button>
               <div class="req"><input type="checkbox" checked /><div><b>1. Job-task performance</b><div class="hint">Work sample is the evidence.</div></div></div>
               <div class="req"><input type="checkbox" checked /><div><b>2. Thinking on this material</b><div class="hint">Messy activation data, not a brainteaser.</div></div></div>
               <div class="req"><input type="checkbox" checked /><div><b>3. Follow-through</b><div class="hint">Finish the ugly middle; recover from a wrong turn.</div></div></div>
@@ -1137,12 +1248,12 @@
               <div style="display:flex;justify-content:space-between"><h2>Instrument</h2><span class="ai">AI drafted</span></div>
               <div class="test">
                 <b>Work sample · 90 min</b>
-                <p class="hint">Activation fell 18% after checkout redesign. Diagnose, pick one bet, write v1.</p>
-                <p class="hint"><b>Designed hole:</b> Q2 returning-trial rate missing.</p>
+                <p class="hint">Mobile checkout completion fell 18% after a React form redesign. Inspect the component tree and profiler trace, identify the likely cause, and propose a safe first fix.</p>
+                <p class="hint"><b>Designed hole:</b> Android WebView performance data is missing from the supplied trace.</p>
               </div>
               <div class="test">
                 <b>Structured interview · same 4 questions</b>
-                <p class="hint">Q1 month-four failure · Q2 self-taught tool · Q3 stakeholder conflict · Q4 what you would not ship.</p>
+                <p class="hint">Q1 persistent frontend issue · Q2 self-taught tool · Q3 urgent design-system change · Q4 what you would defer.</p>
               </div>
               <div class="test">
                 <b>Scored 1–4 with pinned evidence · no hire %</b>
@@ -1153,6 +1264,9 @@
 
         <div class="tabpane" id="pane-config">
           <div class="card">
+            <h2>Stages &amp; weightage</h2>
+            <div id="assessment-stage-list"><p class="hint">No stages have been added to this requisition yet.</p></div>
+            <p class="hint" style="margin-top:8px">The stage list and weightage are inherited from the requisition. Refine detailed stage questions and timing in Stage controls; weights must total 100% before submission.</p>
             <div class="grid2">
               <div>
                 <label class="f">Audio assessment</label>
@@ -1189,31 +1303,54 @@
 
         <div class="tabpane" id="pane-screen">
           <div class="card">
-            <h2>Eligibility &amp; pre-screen criteria</h2>
-            <p class="hint" style="margin-top:6px">Criteria guide AI résumé analysis only. They cannot auto-reject, qualify, or invite — HR makes that decision.</p>
-            <div class="req"><input type="checkbox" checked /><div><b>4+ years consumer SaaS</b><div class="hint">AI extracts and compares; HR decides.</div></div></div>
-            <div class="req"><input type="checkbox" checked /><div><b>Shipped a bet end-to-end</b><div class="hint">Evidence over employer brand.</div></div></div>
-            <div class="req"><input type="checkbox" checked /><div><b>Discrepancy check</b><div class="hint">Flag cautious wording only: “potential discrepancy”, never “dishonest”.</div></div></div>
+            <h2>Interview readiness instructions</h2>
+            <p class="hint" style="margin-top:6px">Set what every candidate receives before an interview. These instructions are opening-specific, accessible, and do not decide eligibility or progression.</p>
+            <label class="f">Candidate preparation note</label><textarea style="min-height:74px">Prepare a brief walkthrough of a React feature you shipped: the user problem, component and state design, evidence used, trade-offs, and outcome. You do not need to share confidential code.</textarea>
+            <label class="f">Format, access, and accommodation instruction</label><textarea style="min-height:82px">The interview is a remote conversation with two interviewers. You may request an accommodation, additional preparation time, captions, a phone dial-in, or an alternative response format through HR before scheduling. Connection quality, camera use, accent, background noise, and a candidate’s home environment are not assessment criteria.</textarea>
+            <label class="f">Online attendance checklist</label><textarea style="min-height:118px">• Use the most stable internet connection available and, if possible, test the meeting link, microphone, and speaker or headphones 10–15 minutes before the interview.
+• Join from a calm, private space where you can speak comfortably and avoid interruptions. If that is not possible, tell HR so another arrangement can be considered.
+• Keep your device charged and have a backup option such as mobile data or a phone dial-in where available.
+• If your connection or audio drops, rejoin the meeting and notify the coordinator. A technical interruption is handled under the opening’s interruption and grievance policy; it is not scored as candidate performance.</textarea>
+            <label class="f">What to bring or submit</label><input type="text" value="No portfolio required. Optional architecture sketch or non-confidential code sample welcome." />
+            <div class="banner">HR reviews accommodation requests privately. Assigned interviewers receive only the practical instruction needed to run the stage fairly.</div>
           </div>
         </div>
-        <div class="card" style="margin-top:16px">
-          <h2>Other / custom stage</h2>
-          <p class="hint">Passing a configured mark is advisory only. HR still records advance, hold, or rejection.</p>
+        <div class="tabpane" id="pane-stage">
+          <div id="stage-controls-list"><p class="hint">Add stages on New role creation to configure their questions, timing, delivery, and weightage here.</p></div>
+          <div class="card" style="margin-top:16px;display:none">
+          <h2>Stage controls · stage 1: Pre-screening</h2>
+          <p class="hint">Stage names are autofilled from the approved requisition. Edit the questions, sections, timing, weightage, delivery, and completion rules for each stage below. HR retains every progression decision.</p>
           <div class="grid2" style="margin-top:10px">
-            <div><label class="f">Stage name</label><input type="text" value="Portfolio debrief" /><label class="f">Mode</label><select><option>Remote meeting</option><option>In person</option><option>Online</option></select><label class="f">Conducted by</label><input type="text" value="Hiring Manager + panel" /></div>
-            <div><label class="f">Evaluator / required count</label><input type="text" value="Assigned evaluator · 2" /><label class="f">Total marks / passing mark</label><input type="text" value="50 / 30" /><label class="f">Stage weightage</label><input type="text" value="Included in configured 100%" /><label class="f">Completion condition</label><input type="text" value="All evaluator submissions locked" /></div>
+            <div><label class="f">Stage name</label><input type="text" value="Pre-screening" /><label class="f">Stage type / enabled</label><select><option>Pre-screening · enabled</option><option>Pre-screening · disabled</option></select><label class="f">Display order</label><input type="number" value="1" min="1" /><label class="f">Delivery mode</label><select><option>Online</option><option>Remote meeting</option><option>In person</option><option>Hybrid</option></select><label class="f">Candidate instructions</label><textarea style="min-height:70px">Submit your résumé and answer the opening-specific eligibility questions. HR reviews context and makes every progression decision.</textarea></div>
+            <div><label class="f">Sections / questions / items</label><input type="text" value="Application details · eligibility acknowledgements · résumé" /><label class="f">Evaluation criteria &amp; rating scale</label><input type="text" value="HR-reviewed evidence · no automatic score" /><label class="f">Stage weightage</label><input type="text" value="20%" /><label class="f">Evaluator / required count</label><input type="text" value="HR reviewer · 1" /><label class="f">Timing / preparation / attempts</label><input type="text" value="Applicant-submitted · no timed assessment" /><label class="f">Re-record / resubmit policy</label><input type="text" value="Not applicable · submission may be corrected before review" /><label class="f">Completion &amp; HR progression rule</label><input type="text" value="HR records advance, hold, or reject" /><label class="f">Accommodation setting</label><select><option>Allow accommodation request · HR reviews privately</option><option>No additional accommodation required</option></select></div>
           </div>
+          <div class="banner warn" style="margin-top:12px">Stage settings can guide evidence collection and scheduling. They cannot make an automatic candidate decision or expose a private accommodation request to unassigned evaluators.</div>
+          </div>
+          <div class="card" style="margin-top:14px;display:none">
+            <h2>Stage 2 · Online assessment</h2>
+            <div class="grid2" style="margin-top:10px"><div><label class="f">Sections</label><input type="text" value="Work sample · Audio baseline · Spoken technical questions" /><label class="f">Candidate questions</label><textarea style="min-height:92px">1. Diagnose the React checkout performance issue in the supplied trace. 2. Explain a React or TypeScript tool you learned. 3. Handle an urgent design-system change that risks checkout. 4. Explain what you would defer and why.</textarea><label class="f">Timing and attempts</label><input type="text" value="90 minutes work sample · 12 minutes spoken answers · 1 re-record" /></div><div><label class="f">Delivery and weightage</label><input type="text" value="Online · 25%" /><label class="f">Evaluation criteria</label><input type="text" value="React diagnosis · TypeScript judgment · accessibility · communication · 1–5" /><label class="f">Completion rule</label><input type="text" value="All required items submitted · HR reviews before progression" /></div></div>
+          </div>
+          <div class="card" style="margin-top:14px;display:none">
+            <h2>Stage 3 · Live interview</h2>
+            <div class="grid2" style="margin-top:10px"><div><label class="f">Sections</label><input type="text" value="Technical knowledge · Communication · Problem solving · Role fit" /><label class="f">Discussion prompts</label><textarea style="min-height:92px">Which performance and error-rate guardrails would trigger a rollback? How would you fill the Android WebView data gap? What accessibility, delivery, or architecture trade-off did you make?</textarea><label class="f">Timing and preparation</label><input type="text" value="60 minutes · 10 minutes preparation · remote meeting" /></div><div><label class="f">Delivery and weightage</label><input type="text" value="Live remote interview · 40%" /><label class="f">Required evaluators</label><input type="text" value="2 independent submissions · see Interviewer panel" /><label class="f">Completion rule</label><input type="text" value="Both scorecards locked · HR records advance, hold, or reject" /></div></div>
+          </div>
+          <div class="card" style="margin-top:14px;display:none">
+            <h2>Stage 4 · HR interview</h2>
+            <div class="grid2" style="margin-top:10px"><div><label class="f">Sections and questions</label><textarea style="min-height:92px">Work arrangement and joining window · compensation alignment · workplace accommodation · offer-readiness questions.</textarea><label class="f">Timing</label><input type="text" value="30 minutes · remote or onsite · 15%" /></div><div><label class="f">Evaluator and completion</label><input type="text" value="Assigned HR reviewer · final disposition recorded by HR" /><label class="f">Candidate-facing instruction</label><input type="text" value="Discuss practical needs and any support required to succeed." /></div></div>
+          </div>
+          <div style="margin-top:16px"><button class="btn primary" onclick="go('hm-publish')">Review and publish opening →</button></div>
         </div>
 
         <div class="tabpane" id="pane-panel">
           <div class="card">
             <h2>Live Interview 1 · required panel: 2</h2>
-            <p class="hint">Enter each nominee's name and email. They may already be a realm user or may activate through a one-time Keycloak invitation after HR approval.</p>
+            <p class="hint">Select members from the organisation employee record. They receive the Live Interview configuration and a notification email after this opening is published.</p>
+            <div id="panel-evaluation-summary" class="banner">Live evaluation sections are inherited from the requisition configuration.</div>
             <div class="grid2" style="margin-top:10px">
-              <div><label class="f">Interviewer 1 name</label><input type="text" value="John Smith" /><label class="f">Email</label><input type="email" value="john.smith@example.com" /></div>
-              <div><label class="f">Interviewer 2 name</label><input type="text" value="Priya Kumar" /><label class="f">Email</label><input type="email" value="priya.kumar@example.com" /></div>
+              <div><label class="f">Interviewer 1 · employee record</label><select id="panel-member-1"><option>John Smith · Engineering · john.smith@example.com</option><option>Marcus Lee · Engineering · marcus.lee@example.com</option><option>Elena Martin · Product · elena.martin@example.com</option></select><div class="hint" style="margin-top:8px">Evaluates every configured Live Interview section.</div></div>
+              <div><label class="f">Interviewer 2 · employee record</label><select id="panel-member-2"><option>Priya Kumar · Engineering · priya.kumar@example.com</option><option>Sana Iyer · Engineering · sana.iyer@example.com</option><option>Amal Joseph · People · amal.joseph@example.com</option></select><div class="hint" style="margin-top:8px">Evaluates every configured Live Interview section.</div></div>
             </div>
-            <div class="banner" style="margin-top:12px">On HR approval, each nominee receives a single-use Keycloak link from the verified organisation address, with HR as Reply-To. Activation is due within 24 hours; expiry requires resend or replacement and never silently grants access.</div>
+            <div class="banner" style="margin-top:12px">On publish, each selected employee receives an email notification with the opening, stage instructions, the full shared evaluation framework, and the due date. Each interviewer independently evaluates every section. Replacing a panel member sends an updated notification and preserves the audit trail.</div>
           </div>
         </div>
 
@@ -1250,31 +1387,31 @@
             <div class="banner warn">Text is an explicit accommodation. HR retains the full request; assigned interviewers receive only the operational instruction. Each enabled section stores modality, duration, preparation time, and order. Network readiness is an acknowledgement, not a speed test.</div>
           </div>
         </div>
-        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" onclick="go('hm-open')">← Opening draft</button><button class="btn primary" onclick="go('hm-criteria')">Continue to pre-screen criteria →</button></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" onclick="go('hm-open')">← Opening draft</button><button class="btn primary" onclick="go('hm-criteria')">Continue to interview readiness instructions →</button></div>
       </div>
 
       <div id="hm-criteria" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>Pre-screen criteria</h1>
+          <h1>Interview readiness instructions</h1>
           <span class="state draft">OPEN-2211 · v1 DRAFT</span>
         </div>
-        <p class="sub">Set the candidate information requirements and criteria that guide advisory résumé analysis. They never auto-qualify, reject, or invite a candidate.</p>
+        <p class="sub">Set opening-specific preparation, format, access, and accommodation instructions for candidates before their interview.</p>
         <div class="grid2" style="margin-top:16px">
           <div class="card">
-            <h2>Required application information</h2>
-            <div class="req"><input type="checkbox" checked /><div><b>Verified email and contact details</b><div class="hint">Required before an invitation can be bound to the application.</div></div></div>
-            <div class="req"><input type="checkbox" checked /><div><b>Original résumé</b><div class="hint">Protected application record; collection validation is not a rejection.</div></div></div>
-            <div class="req"><input type="checkbox" checked /><div><b>Relevant work and experience details</b><div class="hint">Used as opening-specific evidence, not an organisation-global profile.</div></div></div>
+            <h2>Online interview attendance</h2>
+            <div class="req"><input type="checkbox" checked /><div><b>Connection and meeting check</b><div class="hint">Ask candidates to use the most stable connection available and test the meeting link, microphone, speaker or headphones 10–15 minutes before joining.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>Calm, private environment</b><div class="hint">Encourage a quiet separate space where possible. If it is not possible, the candidate can contact HR for another arrangement.</div></div></div>
+            <div class="req"><input type="checkbox" checked /><div><b>Backup and interruption plan</b><div class="hint">Suggest a charged device and backup data or phone dial-in where available. Connection interruptions are handled fairly and are never evaluated as performance.</div></div></div>
           </div>
           <div class="card">
-            <h2>Advisory comparison criteria</h2>
-            <label class="f">Criterion 1</label><input type="text" value="Experience in consumer SaaS" />
-            <label class="f">Criterion 2</label><input type="text" value="Shipped a customer-facing bet end-to-end" />
-            <label class="f">Discrepancy review</label><select><option>Enabled — cautious verification wording</option><option>Disabled</option></select>
-            <div class="banner">AI may identify match, non-match, uncertainty, and information requiring verification. HR retains the only qualification and invitation decision.</div>
+            <h2>Candidate communication</h2>
+            <label class="f">Joining instruction</label><textarea style="min-height:72px">Join five minutes early using the secure interview link. Have your audio ready; camera is optional unless the role-specific invitation says otherwise.</textarea>
+            <label class="f">Accessibility and support contact</label><input type="text" value="Contact HR before the appointment for captions, extra preparation time, an alternative response format, or another access need." />
+            <label class="f">Interruption handling</label><select><option>Reconnect and notify coordinator · HR reviews any reattempt fairly</option><option>Use phone dial-in where available</option></select>
+            <div class="banner">Network stability, video quality, accent, background noise, and the candidate’s environment are not scored. Only role-relevant evidence is evaluated.</div>
           </div>
         </div>
-        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" onclick="go('hm-config')">← Assessment configuration</button><button class="btn primary" onclick="go('hm-publish')">Submit opening package for HR approval →</button></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" onclick="go('hm-config')">← Assessment configuration</button><button class="btn primary" onclick="go('hm-open');tab('open-tabs','pane-stage')">Continue to stage controls →</button></div>
       </div>
 
       <div id="hm-candidates" class="view">
@@ -1285,13 +1422,13 @@
         <div class="banner warn">A hiring manager normally cannot decide candidates. Scores and next-level recommendations shown here require separate HR candidate-review authority; the authoritative progression decision remains recorded by HR.</div>
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>Candidate</th><th>Application state</th><th>Assessment evidence</th><th>Interviews</th><th>Next-level status</th></tr></thead>
+            <thead><tr><th>Candidate</th><th>Application state</th><th>Assessment evidence</th><th>Interviews</th><th>Next-level status</th><th></th></tr></thead>
             <tbody>
-              <tr><td><b>C-07 · Rey Anand</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state readonly">UNDER_HR_REVIEW</span></td><td><span class="mono">3 · 4 · 4 · 4 · 4 · 3 · 3</span><div class="hint">Seven areas · separate evidence</div></td><td><span class="state approved">2 OF 2 SUBMITTED</span></td><td><button class="btn primary" onclick="showHmCandidateAction()">Recommend next level</button></td></tr>
-              <tr><td><b>C-12 · Kavya Shah</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state pending">GRIEVANCE REVIEW</span></td><td class="hint">Unscored interrupted packet</td><td class="hint">Not assigned</td><td><span class="ctx">HR grievance decision required</span></td></tr>
-              <tr><td><b>C-23 · Arun Das</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state approved">PRE-SCREEN READY</span></td><td class="hint">Assessment not yet invited</td><td class="hint">Not assigned</td><td><span class="ctx">HR pre-screen decision required</span></td></tr>
-              <tr><td><b>C-31 · Maya Joseph</b><div class="hint">Software Developer · opening v1</div></td><td><span class="state readonly">ASSESSMENT_SUBMITTED</span></td><td><span class="mono">4 · 3 · 4 · 3 · 4 · 3 · 4</span><div class="hint">Seven areas · separate evidence</div></td><td class="hint">Awaiting HR progression</td><td><span class="ctx">HR assessment review required</span></td></tr>
-              <tr><td><b>C-34 · Samira Khan</b><div class="hint">QA Tester · opening v1</div></td><td><span class="state approved">PRE-SCREEN READY</span></td><td class="hint">Assessment not yet invited</td><td class="hint">Not assigned</td><td><span class="ctx">HR pre-screen decision required</span></td></tr>
+              <tr><td><b>C-07 · Rey Anand</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state readonly">UNDER_HR_REVIEW</span></td><td><span class="mono">3 · 4 · 4 · 4 · 4 · 3 · 3</span><div class="hint">Seven areas · separate evidence</div></td><td><span class="state approved">2 OF 2 SUBMITTED</span></td><td><button class="btn primary" onclick="showHmCandidateAction()">Recommend next level</button></td><td><button class="btn" onclick="openHmApplicant('C-07','Rey Anand','rey.anand@candidate.test','Online Assessment · In Progress')">View</button></td></tr>
+              <tr><td><b>C-12 · Kavya Shah</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state pending">GRIEVANCE REVIEW</span></td><td class="hint">Unscored interrupted packet</td><td class="hint">Not assigned</td><td><span class="ctx">HR grievance decision required</span></td><td><button class="btn" onclick="openHmApplicant('C-12','Kavya Shah','kavya.shah@candidate.test','Assessment interruption · HR review')">View</button></td></tr>
+              <tr><td><b>C-23 · Arun Das</b><div class="hint">Senior PM · opening v1</div></td><td><span class="state approved">PRE-SCREEN READY</span></td><td class="hint">Assessment not yet invited</td><td class="hint">Not assigned</td><td><span class="ctx">HR pre-screen decision required</span></td><td><button class="btn" onclick="openHmApplicant('C-23','Arun Das','arun.das@candidate.test','Pre-screening · HR review')">View</button></td></tr>
+              <tr><td><b>C-31 · Maya Joseph</b><div class="hint">Software Developer · opening v1</div></td><td><span class="state readonly">ASSESSMENT_SUBMITTED</span></td><td><span class="mono">4 · 3 · 4 · 3 · 4 · 3 · 4</span><div class="hint">Seven areas · separate evidence</div></td><td class="hint">Awaiting HR progression</td><td><span class="ctx">HR assessment review required</span></td><td><button class="btn" onclick="openHmApplicant('C-31','Maya Joseph','maya.joseph@candidate.test','Assessment submitted · HR review')">View</button></td></tr>
+              <tr><td><b>C-34 · Samira Khan</b><div class="hint">QA Tester · opening v1</div></td><td><span class="state approved">PRE-SCREEN READY</span></td><td class="hint">Assessment not yet invited</td><td class="hint">Not assigned</td><td><span class="ctx">HR pre-screen decision required</span></td><td><button class="btn" onclick="openHmApplicant('C-34','Samira Khan','samira.khan@candidate.test','Pre-screening · HR review')">View</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -1315,7 +1452,8 @@
         <div class="card">
           <h2>Ready to publish</h2>
           <p class="hint" style="margin-top:6px">Publishing changes this opening to PUBLISHED/ACTIVE. HR may later request suspension, reactivation, or closure; only this opening's Hiring Manager executes or rejects the request with a reason. Applicants do not self-withdraw: configured missed-response deadlines suspend their applications automatically.</p>
-          <button class="btn primary" style="margin-top:12px" onclick="this.textContent='Published · ACTIVE'; this.disabled=true">Publish job opening</button>
+          <button class="btn primary" style="margin-top:12px" onclick="publishOpening(this)">Publish job opening</button>
+          <div id="hm-publish-result" class="banner notice" style="display:none;margin-top:12px"></div>
         </div>
       </div>
 
@@ -1391,30 +1529,49 @@
           <button class="btn" onclick="go('hm-job')">Back to opening</button>
         </div>
         <div class="card" style="margin-top:16px">
-          <div class="req"><div><b>1 · Pre-screening</b><div class="hint">Résumé + AI screening (advisory) · sections: resume review, skills matching, eligibility.</div></div><span class="state readonly">20%</span></div>
-          <div class="req"><div><b>2 · Online assessment</b><div class="hint">Self Introduction · Reading · Technical Questions (Q1–Q4).</div></div><span class="state readonly">25%</span></div>
-          <div class="req"><div><b>3 · Live interview</b><div class="hint">2 interviewers (John Smith · Priya Kumar) · Technical Knowledge 40% · Communication 20% · Problem Solving 20% · Role Fit 20%.</div></div><span class="state readonly">40%</span></div>
-          <div class="req"><div><b>4 · HR interview</b><div class="hint">Final HR disposition.</div></div><span class="state readonly">15%</span></div>
-          <p class="hint" style="margin-top:10px">Clicking a stage opens its configuration and applicant progress.</p>
+          <div class="req"><div><b>1 · Pre-screening</b><div class="hint">Résumé + AI screening (advisory) · HR-reviewed eligibility only — never an automatic rejection.</div></div><span class="state readonly">20%</span></div>
+          <div class="grid2" style="margin-top:12px">
+            <div class="test"><b>Applicant prompts</b><p class="hint">“Are you authorised to work in the job location?” · “Can you work from Bengaluru in the agreed hybrid arrangement?” · “What is your earliest available start date?”</p></div>
+            <div class="test"><b>HR review cue</b><p class="hint">Review résumé, required experience and the candidate’s answers as context. Record an explanation for any progression decision.</p></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="req"><div><b>2 · Online assessment</b><div class="hint">Self introduction · reading baseline · work sample · structured technical questions.</div></div><span class="state readonly">25%</span></div>
+          <div class="grid2" style="margin-top:12px">
+            <div class="test"><b>Work sample · 90 minutes</b><p class="hint">“Mobile checkout completion fell 18% after a React form redesign. Review the component tree and profiler trace, identify the likely cause, and propose a safe first fix.”</p><p class="hint">Designed hole: the supplied trace excludes Android WebView traffic. The candidate should flag the gap, choose an available signal, and state how they would validate the fix before rollout.</p></div>
+            <div class="test"><b>Spoken baseline</b><p class="hint">1. Introduce yourself naturally in about 45 seconds.</p><p class="hint">2. Read: “A component can look correct in isolation and still make the product slow. Start with the user path, measure the render work, fix the smallest responsible boundary, and verify the result with real-user data.”</p></div>
+          </div>
+          <div class="test" style="margin-top:10px"><b>Structured questions · respond in writing</b><p class="hint">Q1. Describe a React performance or reliability issue that lasted longer than expected. How did you investigate it and what did you change? &nbsp; Q2. Tell us about a React, TypeScript, or frontend tool you taught yourself. What could you do in week one versus week four? &nbsp; Q3. A design-system change must ship Friday, but it may break checkout. What do you do in the next 48 hours? &nbsp; Q4. What would you defer from a frontend roadmap this quarter, and why?</p></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="req"><div><b>3 · Live interview</b><div class="hint">John Smith + Priya Kumar · same pinned question set and independent scorecards.</div></div><span class="state readonly">40%</span></div>
+          <div class="grid2" style="margin-top:12px">
+            <div class="test"><b>Discussion prompts</b><p class="hint">“Which performance and error-rate guardrails would make you stop or roll back the release?” · “How would you make the missing Android WebView data visible before deciding?” · “What accessibility, delivery, or architecture trade-off did you make in your work-sample answer?”</p></div>
+            <div class="test"><b>Evaluation framework</b><p class="hint">Technical knowledge 40% · Communication 20% · Problem solving 20% · Role fit 20%. Each interviewer submits before seeing the other score.</p></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="req"><div><b>4 · HR interview</b><div class="hint">Final conversation to confirm practical fit, support needs, and offer readiness.</div></div><span class="state readonly">15%</span></div>
+          <div class="test" style="margin-top:12px"><b>Sample questions</b><p class="hint">“What support would help you succeed in a hybrid role?” · “What notice period would you need to serve?” · “Is the compensation range aligned with your expectations?” · “Do you need any interview or workplace accommodation?”</p><p class="hint">HR records the final disposition and rationale; progression remains an HR decision.</p></div>
         </div>
         <div class="banner warn" style="margin-top:14px">Configuration locks once applicants enter a stage. After that, changes require a new revision that preserves the configuration actually used when each applicant was evaluated.</div>
       </div>
 
       <div id="hm-applicant" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div><h1>Applicant detail · Hiring Manager view</h1><p class="sub">Applicant 001 · JOB-001 Senior React Developer · current stage Online Assessment · In Progress.</p></div>
+          <div><h1>Applicant detail · Hiring Manager view</h1><p class="sub" id="hm-applicant-subtitle">Applicant C-07 · JOB-001 Senior React Developer · current stage Online Assessment · In Progress.</p></div>
           <button class="btn" onclick="go('hm-candidates')">Back to pipeline</button>
         </div>
         <div class="banner warn" style="margin-top:14px">Résumé and "distance traveled" context stay hidden until this stage's scores lock (blind review). Evaluation results are read-only for the Hiring Manager.</div>
         <div class="grid2">
           <div class="card">
             <h2>Profile</h2>
-            <div class="req"><div><b>Applicant ID</b><div class="hint">APP-2407</div></div></div>
-            <div class="req"><div><b>Name</b><div class="hint">Rey Anand</div></div></div>
-            <div class="req"><div><b>Email</b><div class="hint">rey.anand@example.com</div></div></div>
+            <div class="req"><div><b>Applicant ID</b><div class="hint" id="hm-applicant-id">C-07</div></div></div>
+            <div class="req"><div><b>Name</b><div class="hint" id="hm-applicant-name">Rey Anand</div></div></div>
+            <div class="req"><div><b>Email</b><div class="hint" id="hm-applicant-email">rey.anand@example.com</div></div></div>
             <div class="req"><div><b>College</b><div class="hint">Bootcamp 2022</div></div></div>
             <div class="req"><div><b>CGPA</b><div class="hint">—</div></div></div>
-            <div class="req"><div><b>Current stage</b><div class="hint">Online Assessment · In Progress</div></div></div>
+            <div class="req"><div><b>Current stage</b><div class="hint" id="hm-applicant-stage">Online Assessment · In Progress</div></div></div>
             <div class="req"><div><b>Stage history</b><div class="hint">Pre-screening → qualified for assessment → Online Assessment (in progress).</div></div></div>
           </div>
           <div class="card">
@@ -1640,7 +1797,7 @@
             <div class="req"><div><b>Stage sequence</b><div class="hint">Pre-screening → Online assessment → Live interview → HR interview.</div></div></div>
             <div class="req"><div><b>Online assessment</b><div class="hint">7 scored areas · audio enabled · re-record max 1 · 40 minutes.</div></div></div>
             <div class="req"><div><b>Live interview</b><div class="hint">2 interviewers (John Smith · Priya Kumar) · Technical Knowledge 40% · Communication 20% · Problem Solving 20% · Role Fit 20%.</div></div></div>
-            <div class="req"><div><b>Pre-screen criteria</b><div class="hint">4+ yrs SaaS · shipped-a-bet · cautious discrepancy check.</div></div></div>
+            <div class="req"><div><b>Interview readiness instructions</b><div class="hint">Preparation note · remote format · accommodation route.</div></div></div>
           </div>
           <div class="card">
             <h2>Position tracking</h2>
@@ -2083,12 +2240,32 @@
         <h1>Application form (pre-screening)</h1>
         <p class="sub">Fields below are generated from the requisition's configured Pre-screening stage (sections → questions) — nothing is hardcoded. Your email-verified Keycloak identity is active; HireScope stores no human password hash.</p>
         <div class="card" style="max-width:560px">
-          <label class="f">Personal / professional details</label>
-          <textarea style="min-height:52px">Bootcamp 2022 · 2 yrs B2B PM at a 40-person company · 14-month caregiving gap.</textarea>
-          <label class="f">Eligibility (configured question)</label>
-          <div class="test"><b>Work authorisation</b><p class="hint">Are you authorised to work in the location of this role? (configured per requisition)</p></div>
-          <label class="f">Résumé upload</label>
-          <input type="text" value="rey-anand-resume.pdf" disabled style="background:#faf6f0" />
+          <h2>Required applicant information</h2>
+          <div class="grid2" style="margin-top:8px">
+            <div><label class="f">First name</label><input type="text" value="Rey" /></div>
+            <div><label class="f">Last name</label><input type="text" value="Anand" /></div>
+          </div>
+          <label class="f">Email</label><input type="email" value="applicant@pente.ai" disabled />
+          <label class="f">Phone number</label><input type="text" value="+91 90000 10101" />
+          <label class="f">Current city / location</label><input type="text" value="Bengaluru, India" />
+          <label class="f">Professional summary or relevant experience</label>
+          <textarea style="min-height:62px">Bootcamp 2022 · 2 years B2B PM at a 40-person company · 14-month caregiving gap.</textarea>
+
+          <h2 style="margin-top:18px">Required documents</h2>
+          <label class="f">Résumé / CV (PDF)</label><input type="text" value="rey-anand-resume.pdf" disabled style="background:#faf6f0" />
+          <label class="f">Portfolio or work sample link <span class="hint">(optional for this role)</span></label><input type="text" value="https://portfolio.example/rey" />
+
+          <h2 style="margin-top:18px">Eligibility acknowledgements</h2>
+          <div class="req"><input type="checkbox" /><div><b>Work authorisation</b><div class="hint">I am authorised to work in India, or I would need employer support. This is reviewed by HR, not automatically screened.</div></div></div>
+          <div class="req"><input type="checkbox" /><div><b>Work arrangement</b><div class="hint">I understand this opening is Bengaluru hybrid, with an expected three days per week in office. I can describe any constraint for HR review.</div></div></div>
+          <div class="req"><input type="checkbox" /><div><b>Joining availability</b><div class="hint">I have shared my likely notice period. A period outside the preference can still be reviewed by HR.</div></div></div>
+          <div class="req"><input type="checkbox" /><div><b>Accommodation request</b><div class="hint">I can request an adjustment to the application or assessment process. Only the responsible HR team receives the request details.</div></div></div>
+
+          <h2 style="margin-top:18px">Privacy &amp; consent</h2>
+          <div class="req"><input type="checkbox" /><div><b>Applicant privacy notice</b><div class="hint">I have read how Pente.AI uses and retains my application data for this opening and how to request access, correction, or deletion where applicable.</div></div></div>
+          <div class="req"><input type="checkbox" /><div><b>Application processing consent</b><div class="hint">I consent to Pente.AI processing this application for the stated recruitment purpose. I can withdraw my application subject to applicable law.</div></div></div>
+
+          <div class="test" style="margin-top:14px"><b>Voluntary diversity information <span class="ctx">optional &amp; isolated</span></b><p class="hint" style="margin-top:4px">If legally collected for reporting, this information is voluntary, separated from the hiring workflow, and never shown to decision-makers or used to score, rank, advance, or reject an applicant.</p><label class="f">Choose not to disclose</label><select><option>Prefer not to say</option><option>Voluntary self-identification available where lawful</option></select></div>
           <label class="f">Identity</label>
           <input type="text" value="Email verified · Keycloak · Applicant role" disabled />
           <div class="banner">Submitting creates a job application only — it never creates an organisation membership and never grants assessment access. The organisation is derived from the opening, not your browser.</div>
@@ -2124,34 +2301,37 @@
       </div>
 
       <div id="ap-assess" class="view">
-        <h1>Assessment</h1>
-        <p class="sub">This pinned Assessment has three sections. Each completion is an item: written work sample, two baseline audio items, then question-backed spoken items. Re-recording creates a new version for that item.</p>
-        <div class="grid2">
-          <div class="card">
-            <h2>1. Work sample</h2>
-            <p class="hint" style="margin-top:6px">Activation fell 18% after checkout redesign. Diagnose, pick one bet, write v1.</p>
-            <p class="hint"><b>Designed hole:</b> Q2 returning-trial rate is missing from the export.</p>
-            <textarea style="min-height:90px;margin-top:8px">The export is missing Q2 returning-trial rate. I would not stall for a perfect cut — ship delayed fields on mobile, measure new-trial activation, pull the returning cut from warehouse before Friday.</textarea>
-          </div>
-          <div class="card">
-            <h2>2. Audio baseline</h2>
-            <div class="req"><div><b>Self-introduction</b><div class="hint">Item: SELF_INTRODUCTION · recording v1 submitted</div></div><span class="state approved">RECORDED</span></div>
-            <div class="req"><div><b>Read-a-passage</b><div class="hint">Item: READ_A_PASSAGE · same approved passage for every candidate</div></div><span class="state pending">RECORD</span></div>
-            <div class="hint" style="margin-top:8px">These are recording items, not questions. Each recording version points to its own assessment item.</div>
-          </div>
-          <div class="card">
-            <h2>3. Spoken question answers</h2>
-            <div class="wave live" style="margin-top:8px"></div>
-            <div class="hint" style="margin-top:6px">Q1 of 4 · month-four failure · recording · 1 retry available</div>
-            <div class="rb"><i class="on">1</i><i>2</i><i>3</i><i>4</i></div>
-            <div class="hint" style="margin-top:8px">A new version never deletes a prior recording. Only the latest submitted version is analysed.</div>
-          </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>Senior React Developer assessment</h1><p class="sub">Scored on the work. Your résumé and optional context stay hidden until reviewers lock their scores.</p></div><span class="state pending">1:14:08 LEFT</span></div>
+        <div class="rb" aria-label="Assessment progress"><i class="on">1</i><i>2</i><i>3</i><i>4</i></div>
+        <div class="card" style="max-width:820px">
+          <div class="hint">Part 1 of 4 · Work sample · one performance-data segment is missing on purpose</div>
+          <h2 style="margin:6px 0 10px">Mobile checkout completion fell after a React form redesign</h2>
+          <p>Completion dropped 18% after new validation fields were added. Desktop barely moved, but mobile completion fell. The component tree and profiler trace are supplied — except Android WebView traffic is missing.</p>
+          <label class="f">Your engineering memo</label><textarea style="min-height:150px">The trace suggests validation state is triggering unnecessary re-renders across the checkout form. I would isolate field state, measure the hot path before memoising, and ship the smallest safe fix behind a flag. Before rollout I would add Android WebView RUM coverage and compare completion, INP, and error rate with the control.</textarea>
+          <label class="f">Optional context for after scoring</label><textarea style="min-height:52px" placeholder="Optional — reviewers will not see this until their scores lock."></textarea>
+          <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px"><button class="btn">Save draft</button><button class="btn primary" onclick="go('ap-vintro')">Continue to spoken introduction →</button></div>
         </div>
-        <div class="banner warn" style="max-width:640px">Interruption offers <b>Submit Test</b> or <b>Submit Grievance</b>. A grievance never auto-grants a retry — HR decides.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" onclick="go('ap-interruption')">Simulate interruption</button>
-          <button class="btn primary" onclick="go('ap-processing')">Submit assessment →</button>
-        </div>
+        <div class="banner warn" style="max-width:820px">If an interruption occurs, your saved work is preserved. Use the interruption option to submit the permitted packet or ask HR to review a grievance.</div>
+        <button class="btn" onclick="go('ap-interruption')">Report interruption</button>
+      </div>
+
+      <div id="ap-vintro" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>Spoken introduction</h1><p class="sub">First record a natural speaking baseline, then a short reading sample, then the structured questions.</p></div><span class="state pending">REC · INTRO</span></div>
+        <div class="rb"><i class="on">1</i><i class="on">2</i><i>3</i><i>4</i></div>
+        <div class="banner warn">Your voice is recorded for this opening only. We compare later answers to your own introduction and reading sample as a human listen-flag, never a cheat score. We do not score accent, confidence, or personality. A typed path is available as an accommodation.</div>
+        <div class="card" style="max-width:820px"><div class="hint">Part 2 of 4 · about 45 seconds · natural baseline</div><h2 style="margin:6px 0 10px">Introduce yourself as a frontend engineer</h2><p>Describe the kind of user or engineering problems you enjoy solving. Do not list schools or employers.</p><div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="btn primary" id="ap-intro-record" onclick="toggleApRecording('ap-intro-record','ap-intro-wave')">Start recording</button><div class="wave" id="ap-intro-wave" style="flex:1"></div></div><p class="hint">This is your natural speaking baseline, not a scored monologue.</p><div style="display:flex;justify-content:space-between;gap:8px"><button class="btn">Request typed interview</button><button class="btn primary" onclick="go('ap-vread')">Use this take →</button></div></div>
+      </div>
+
+      <div id="ap-vread" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>Reading sample</h1><p class="sub">Every applicant reads the same passage. It is a read-aloud baseline, not a literacy or accent test.</p></div><span class="state pending">REC · READING</span></div>
+        <div class="rb"><i class="on">1</i><i class="on">2</i><i class="on">3</i><i>4</i></div>
+        <div class="card" style="max-width:820px"><div class="hint">Part 3 of 4 · read aloud · about 30 seconds</div><h2 style="margin:6px 0 10px">Read the passage on screen</h2><div class="test">A component can look correct in isolation and still make the product slow. Start with the user path, measure the render work, fix the smallest responsible boundary, and verify the result with real-user data.</div><div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="btn primary" id="ap-read-record" onclick="toggleApRecording('ap-read-record','ap-read-wave')">Start recording</button><div class="wave" id="ap-read-wave" style="flex:1"></div></div><p class="hint">You may re-record once. Later answers are compared only to this clip and your introduction; a flag is reviewed by a human and cannot reject you.</p><div style="display:flex;justify-content:space-between;gap:8px"><button class="btn">Re-record</button><button class="btn primary" onclick="go('ap-vq1')">Use this take →</button></div></div>
+      </div>
+
+      <div id="ap-vq1" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>Question 1 of 4</h1><p class="sub">Answer out loud as you would in a real interview. Think first if you need to; do not read an essay.</p></div><span class="state pending">THINK · 0:18</span></div>
+        <div class="rb"><i class="on">1</i><i class="on">2</i><i class="on">3</i><i class="on">4</i></div>
+        <div class="card" style="max-width:820px"><div class="hint">React performance and reliability · spoken</div><h2 style="margin:6px 0 10px">Describe a React performance or reliability issue that lasted longer than expected. How did you investigate it and what did you change?</h2><div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="btn primary" id="ap-question-record" onclick="toggleApRecording('ap-question-record','ap-question-wave')">Start recording</button><div class="wave" id="ap-question-wave" style="flex:1"></div></div><p class="hint">One retry is available. Your response is assessed for role-relevant evidence, not delivery polish.</p><p class="hint">Q2–Q4 use the same pinned structure: a frontend tool you learned, an urgent design-system change that risks checkout, and what you would defer from a frontend roadmap.</p><div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" onclick="go('ap-interruption')">Report interruption</button><button class="btn primary" onclick="go('ap-processing')">Submit assessment →</button></div></div>
       </div>
 
       <div id="ap-interruption" class="view">
@@ -2255,8 +2435,10 @@
         <div class="grid2">
           <div class="card">
             <h2>Role details</h2>
-            <div class="req"><div><b>Location / work mode</b><div class="hint">Remote (India)</div></div></div>
+            <div class="req"><div><b>Location / work mode</b><div class="hint">Bengaluru · Hybrid (3 days in office)</div></div></div>
             <div class="req"><div><b>Employment type</b><div class="hint">Full-time</div></div></div>
+            <div class="req"><div><b>Compensation range</b><div class="hint">₹32L–₹48L total annual compensation</div></div></div>
+            <div class="req"><div><b>Joining preference</b><div class="hint">0–60 days’ notice preferred; HR reviews exceptions</div></div></div>
             <div class="req"><div><b>Positions</b><div class="hint">1 available to select</div></div></div>
             <div class="req"><div><b>Closes</b><div class="hint">18 October 2026</div></div></div>
             <div class="req"><div><b>Process</b><div class="hint">Pre-screening → Online Assessment → Live Interview 1 → Live Interview 2 → HR Interview</div></div></div>
@@ -2401,7 +2583,7 @@
         <h2 style="margin-top:18px">Requisitions and applicants</h2>
         <div class="card" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-            <div><h2>Senior Product Manager <span class="flow-marker" aria-label="Interviewer flow screen 6">6</span></h2><div class="hint">Pente.AI · OPEN-2211 · Live Interview · Required Interviewers: 2</div></div>
+            <div><h2>Senior React Developer <span class="flow-marker" aria-label="Interviewer flow screen 6">6</span></h2><div class="hint">REQ-1837 · JOB-001 · Live Interview · Required Interviewers: 2</div></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('in-applicants')">All applicants (2)</button><button class="btn" onclick="go('in-req')">View requisition →</button></div>
           </div>
         </div>
@@ -2415,17 +2597,17 @@
 
       <div id="in-applicants" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div><h1>All applicants</h1><p class="sub">Senior Product Manager · OPEN-2211. Review every applicant assigned to this requisition; the dashboard keeps a compact two-applicant preview.</p></div>
+          <div><h1>All applicants</h1><p class="sub">Senior React Developer · JOB-001. Review every applicant assigned to this requisition; the dashboard keeps a compact two-applicant preview.</p></div>
           <button class="btn" onclick="go('in-list')">← My interviews</button>
         </div>
         <div class="banner">2 applicants are currently assigned to this requisition. This list grows independently for each assigned requisition as more applicants are scheduled.</div>
         <div class="card" style="margin-top:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>Senior Product Manager</h2><span class="state readonly">2 APPLICANTS</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>Senior React Developer</h2><span class="state readonly">2 APPLICANTS</span></div>
           <table class="tbl" style="margin-top:12px">
             <thead><tr><th>Applicant</th><th>Interview</th><th>Your evaluation</th><th></th></tr></thead>
             <tbody>
-              <tr><td><b>C-07 · Rey Anand</b><div class="hint">Senior Product Manager</div></td><td><span class="state approved">Scheduled · 9 Oct 2026 · 1:00 PM</span></td><td><span class="state pending" id="li-my-eval-list">PENDING</span></td><td><button class="btn" id="li-my-eval-action" onclick="go('in-brief')">Open brief →</button></td></tr>
-              <tr><td><b>C-11 · Sana Iqbal</b><div class="hint">Senior Product Manager</div></td><td><span class="state readonly">Completed</span></td><td><span class="state approved">COMPLETED</span></td><td><button class="btn" onclick="go('in-submit')">View submission</button></td></tr>
+              <tr><td><b>C-07 · Rey Anand</b><div class="hint">Senior React Developer</div></td><td><span class="state approved">Scheduled · 9 Oct 2026 · 1:00 PM</span></td><td><span class="state pending" id="li-my-eval-list">PENDING</span></td><td><button class="btn" id="li-my-eval-action" onclick="go('in-brief')">Open brief →</button></td></tr>
+              <tr><td><b>C-11 · Sana Iqbal</b><div class="hint">Senior React Developer</div></td><td><span class="state readonly">Completed</span></td><td><span class="state approved">COMPLETED</span></td><td><button class="btn" onclick="go('in-submit')">View submission</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -2456,19 +2638,20 @@
         <div class="grid2">
           <div class="card">
             <h2>Job information</h2>
-            <div class="req"><div><b>Job title</b><div class="hint">Senior Product Manager</div></div></div>
-            <div class="req"><div><b>Job description</b><div class="hint">Own activation end to end. Diagnose trial-to-paid drop, pick one bet, ship a v1 others can build from.</div></div></div>
-            <div class="req"><div><b>Organization</b><div class="hint">Pente.AI</div></div></div>
-            <div class="req"><div><b>Requirements</b><div class="hint">Consumer SaaS experience · shipping evidence over pedigree · 4+ years product.</div></div></div>
-            <div class="req"><div><b>Requisition</b><div class="hint">REQ-1842 · OPEN-2211 · v1 approved</div></div></div>
+            <div class="req"><div><b>Job title</b><div class="hint">Senior React Developer</div></div></div>
+            <div class="req"><div><b>Business justification</b><div class="hint">Strengthen the product-engineering team to deliver the next release safely and improve frontend platform quality.</div></div></div>
+            <div class="req"><div><b>Employment &amp; location</b><div class="hint">2 positions · Full-time · Bengaluru hybrid</div></div></div>
+            <div class="req"><div><b>HR-reviewed eligibility</b><div class="hint">Bachelor's degree or equivalent experience · 4+ years with React and TypeScript · experience with design systems · able to join within 45 days.</div></div></div>
+            <div class="req"><div><b>Requisition</b><div class="hint">REQ-1837 · JOB-001 · v1 approved</div></div></div>
           </div>
           <div class="card">
             <h2>Live Interview configuration</h2>
             <div class="req"><div><b>Live Interview</b><div class="hint">Enabled</div></div><span class="state approved">ENABLED</span></div>
+            <div class="req"><div><b>Stage sequence</b><div class="hint">Pre-screening 20% · Online assessment 25% · Live Interview 40% · HR Interview 15%</div></div></div>
             <div class="req"><div><b>Required interviewers</b><div class="hint">2</div></div></div>
             <div class="req"><div><b>Assigned interviewers</b><div class="hint" id="in-req-assigned">✓ John Smith · ✓ Priya Kumar</div></div></div>
             <div class="req"><div><b>Rating scale</b><div class="hint">0–5 per section</div></div></div>
-            <div class="banner">Interviewers see this framework before conducting the interview. They cannot modify it.</div>
+            <div class="banner">Both interviewers independently evaluate every configured section. The published framework is read-only for interviewers.</div>
           </div>
         </div>
         <div class="card" style="margin-top:14px">
@@ -2477,7 +2660,7 @@
           <div class="req"><div><b>Communication Skills</b><div class="hint">20%</div></div><span class="state readonly">20%</span></div>
           <div class="req"><div><b>Problem Solving</b><div class="hint">20%</div></div><span class="state readonly">20%</span></div>
           <div class="req"><div><b>Role Fit</b><div class="hint">20%</div></div><span class="state readonly">20%</span></div>
-          <div class="hint" style="margin-top:10px">No preset interview questions for the Live Interview — questions are configured only for the Online Assessment.</div>
+          <div class="hint" style="margin-top:10px">Use the published interview guide and score every section independently. Questions and timing are configured on the opening before publication.</div>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px"><button class="btn" onclick="go('in-list')">← My interviews</button></div>
       </div>
@@ -2492,7 +2675,6 @@
             <h2>Job information</h2>
             <div class="req"><div><b>Job title</b><div class="hint">Full Stack Developer</div></div></div>
             <div class="req"><div><b>Job description</b><div class="hint">Build reliable customer-facing features across the web application and its supporting services.</div></div></div>
-            <div class="req"><div><b>Organization</b><div class="hint">Pente.AI</div></div></div>
             <div class="req"><div><b>Requirements</b><div class="hint">Modern JavaScript, API design, relational data, and pragmatic delivery.</div></div></div>
             <div class="req"><div><b>Requisition</b><div class="hint">REQ-1846 · OPEN-2215 · v1 approved</div></div></div>
           </div>
@@ -2526,7 +2708,7 @@
             <h2>Applicant information</h2>
             <div class="req"><div><b>Applicant</b><div class="hint">C-07 · Rey Anand</div></div></div>
             <div class="req"><div><b>Current stage</b><div class="hint">Eligible for Live Interview</div></div></div>
-            <div class="req"><div><b>Relevant experience</b><div class="hint">2 yrs B2B PM · shipped a bet end-to-end.</div></div></div>
+            <div class="req"><div><b>Relevant experience</b><div class="hint">5 years React and TypeScript · built and maintained a reusable component library.</div></div></div>
             <div class="hint" style="margin-top:8px">Only information required for the interview is shown; résumé and "distance traveled" context stay hidden until this stage's scores lock (blind review).</div>
           </div>
           <div class="card">
@@ -2540,7 +2722,7 @@
         <div class="card" style="margin-top:14px">
           <h2>Previous-stage HR comments</h2>
           <div class="test"><b>Pre-screening HR comment</b><p class="hint">"Candidate satisfies the minimum experience requirement."</p></div>
-          <div class="test"><b>Online Assessment HR comment</b><p class="hint">"Candidate demonstrated good understanding of the technical concepts."</p></div>
+          <div class="test"><b>Online Assessment HR comment</b><p class="hint">"Candidate demonstrated sound React and TypeScript reasoning in the work sample."</p></div>
         </div>
         <div class="card" style="margin-top:14px">
           <h2>Live Interview scoring criteria</h2>
@@ -2561,7 +2743,7 @@
           <div class="score-row"><span class="sn c3">20%</span><span><b>Problem Solving</b><div class="hint">Weight 20% · score 0–5</div></span><select id="li-score-3"><option>5</option><option>4</option><option selected>3</option><option>2</option><option>1</option><option>0</option></select></div>
           <div class="score-row"><span class="sn c3">20%</span><span><b>Role Fit</b><div class="hint">Weight 20% · score 0–5</div></span><select id="li-score-4"><option>5</option><option selected>4</option><option>3</option><option>2</option><option>1</option><option>0</option></select></div>
           <label class="f" style="margin-top:12px">Overall comment (required)</label>
-          <textarea id="li-comment" style="min-height:72px">Named the missing metric early and stayed on the problem. Clear trade-off language; ask them to bring the same structure to a stakeholder conflict.</textarea>
+          <textarea id="li-comment" style="min-height:72px">Explained the React state and rendering trade-offs clearly. Probe further on the design-system migration approach and stakeholder communication.</textarea>
           <div class="banner" style="margin-top:10px">Submission is final and immutable. You cannot edit after submitting, and duplicate submission is rejected.</div>
           <div id="li-submit-note" class="banner notice" style="display:none"></div>
           <button class="btn primary" style="margin-top:12px" onclick="submitInterviewerEvaluation()">Submit Evaluation</button>
@@ -2593,13 +2775,10 @@
       'hm@pente.ai':                 { role:'hm', roles:['ap','hm'], name:'Priya Menon', org:'Pente.AI', password:'demo123' },
       'hr@pente.ai':                 { role:'hr', roles:['ap','hr'], name:'Arun Nair',  org:'Pente.AI', password:'demo123' },
       'applicant@pente.ai':          { role:'ap', roles:['ap'], name:'Rey Anand (C-07)', org:'Pente.AI', orgs:['Pente.AI','Meridian Labs'], accessPath:'applicant', password:'demo123' },
-      'interviewer@pente.ai':        { role:'in', roles:['ap','in'], name:'John Smith', org:'Pente.AI', password:'demo123' },
-      'priya.interviewer@pente.ai':  { role:'in', roles:['ap','in'], name:'Priya Kumar', org:'Pente.AI', password:'demo123' },
-      'orgadmin@pente.ai':           { role:'oa', roles:['ap','oa'], name:'Pente.AI Organisation Admin', org:'Pente.AI', password:'demo123' },
-      'portaladmin@pente.ai':        { role:'oa', roles:['ap','oa'], name:'Pente.AI Organization Admin', org:'Pente.AI', orgs:['Pente.AI'], accessPath:'portal', password:'demo123' },
-      'superadmin@pente.ai':         { role:'sa', roles:['sa'], name:'Pente.AI Super Admin', org:'Pente.AI', password:'demo123' },
-      'admin@hirescope.test':        { role:'pa', roles:['pa'], name:'Meera Iyer', org:'HireScope Platform', password:'demo123' },
-      'anita@example.com':           { role:'ap', roles:['ap'], name:'Anita Sharma', org:'Pente.AI', orgs:['Pente.AI'], accessPath:'applicant', password:'demo123' },
+      'interviewer@pente.ai':        { role:'in', roles:['in'], name:'John Smith', org:'Pente.AI', password:'demo123' },
+      'priya.interviewer@pente.ai':  { role:'in', roles:['in'], name:'Priya Kumar', org:'Pente.AI', password:'demo123' },
+      'orgadmin@pente.ai':           { role:'oa', roles:['ap','oa'], name:'Pente.AI Org Owner', org:'Pente.AI', password:'demo123' },
+      'superadmin@pente.ai':         { role:'sa', roles:['sa'], name:'Pente.AI Org Admin', org:'Pente.AI', password:'demo123' },
     };
     const APPLICANT_STORAGE_KEY = 'hs_registered_applicants';
     const PORTAL_ROLE_STORAGE_KEY = 'hs_portal_role_overrides';
@@ -2615,25 +2794,23 @@
     let pendingVerificationEmail = '';
     let loginMode = 'general';
     const PASS = 'demo123';
-    const ROLE_FIRST = { rc:'hm-list', hm:'hm-list', hr:'hr-list', ap:'ap-list', in:'in-list', oa:'oa-dashboard', sa:'sa-dashboard', pa:'pa-dashboard' };
-    const NAVS = { rc:'nav-hm', hm:'nav-hm', hr:'nav-hr', ap:'nav-ap', in:'nav-in', oa:'nav-oa', sa:'nav-sa', pa:'nav-pa' };
-    const ROLE_LABEL = { rc:'Requisition Creator', hm:'Hiring manager', hr:'HR reviewer', ap:'Applicant', in:'Interviewer', oa:'Organization Admin', sa:'Super Admin', pa:'Platform Admin' };
+    const ROLE_FIRST = { rc:'hm-list', hm:'hm-list', hr:'hr-list', ap:'ap-list', in:'in-list', oa:'oa-dashboard', sa:'sa-dashboard' };
+    const NAVS = { rc:'nav-hm', hm:'nav-hm', hr:'nav-hr', ap:'nav-ap', in:'nav-in', oa:'nav-oa', sa:'nav-sa' };
+    const ROLE_LABEL = { rc:'Requisition Creator', hm:'Hiring manager', hr:'HR reviewer', ap:'Applicant', in:'Interviewer', oa:'Org Owner', sa:'Org Admin' };
     const TITLES = {
       'oa-dashboard':'Dashboard','oa-pending':'Pending / to be verified','oa-verify':'Verify user','oa-confirmed':'Confirmed users','oa-user-detail':'User details','oa-jobs':'Job openings','oa-job-detail':'Job opening details','oa-profile':'Profile / change password','oa-settings':'Workspace settings','oa-audit':'Access & audit policy',
-      'pa-dashboard':'Dashboard','pa-registrations':'Organization registrations','pa-registration-detail':'Registration details','pa-workspaces':'Workspaces','pa-workspace-detail':'Workspace details','pa-workspace-users':'Workspace users','pa-user-detail':'User / role verification details','pa-profile':'Profile / Keycloak password',
-      'sa-dashboard':'Dashboard','sa-onboarding':'Organization onboarding','sa-onboarding-status':'Provisioning status','sa-admin-management':'Organization Admin management','sa-replace-admin':'Replace Organization Admin','sa-audit':'Audit history',
-      'hm-list':'Dashboard','hm-req':'Create requisition','hm-req-status':'Requisition status','hm-jobs':'My job openings','hm-job':'View job opening','hm-stages':'View stages','hm-candidates':'Candidate pipeline','hm-applicant':'Applicant detail','hm-open':'Create job opening','hm-config':'Assessment configuration','hm-criteria':'Pre-screen criteria','hm-publish':'Publish & version','hm-requests':'Action requests',
+      'sa-dashboard':'Dashboard','sa-onboarding':'Organization onboarding','sa-onboarding-status':'Provisioning status','sa-admin-management':'Org Owner management','sa-replace-admin':'Replace Org Owner','sa-audit':'Audit history',
+      'hm-list':'Dashboard','hm-req':'New role creation','hm-req-status':'Requisition status','hm-jobs':'My job openings','hm-job':'View job opening','hm-stages':'View stages','hm-candidates':'Candidate pipeline','hm-applicant':'Applicant detail','hm-open':'Create job opening','hm-config':'Assessment configuration','hm-criteria':'Interview readiness instructions','hm-publish':'Publish & version','hm-requests':'Action requests',
       'hr-list':'Dashboard','hr-req':'Requisition approval','hr-openings':'Approved openings','hr-opening':'Opening details','hr-open':'Opening approval','hr-candidates':'Candidate review queue','hr-prescreen':'Pre-screen decision','hr-grievance':'Grievance review','hr-assess':'Assessment review','hr-ai-failure':'AI processing recovery','hr-access-denied':'Access denied','hr-interview':'Schedule live interview','hr-live-status':'Live interview status','hr-final':'Final decision','hr-closure':'Headcount & closure',
-      'ap-list':'Dashboard','ap-jobs':'Job details','ap-interest':'Register interest','ap-intake':'Application form (pre-screening)','ap-apply-confirm':'Application submitted','ap-myapps':'My applications','ap-prescreen-pending':'Pre-screen review','ap-prescreen-rejected':'Pre-screen rejection','ap-status':'Invitation & status','ap-readiness':'Readiness','ap-assess':'Assessment','ap-interruption':'Interruption / grievance','ap-processing':'Submission status','ap-outcome':'Outcome','ap-live':'Live interview 1','ap-live2':'Live interview 2','ap-hr-interview':'HR interview','ap-final':'Final selection','ap-onboarding':'Onboarding','ap-role':'Workspace access','ap-role-pending':'Workspace access · pending','ap-role-rejected':'Workspace access · rejected','ap-role-approved':'Workspace access · approved',
+      'ap-list':'Dashboard','ap-jobs':'Job details','ap-interest':'Register interest','ap-intake':'Application form (pre-screening)','ap-apply-confirm':'Application submitted','ap-myapps':'My applications','ap-prescreen-pending':'Pre-screen review','ap-prescreen-rejected':'Pre-screen rejection','ap-status':'Invitation & status','ap-readiness':'Readiness','ap-assess':'Work sample','ap-vintro':'Spoken introduction','ap-vread':'Reading sample','ap-vq1':'Structured questions','ap-interruption':'Interruption / grievance','ap-processing':'Submission status','ap-outcome':'Outcome','ap-live':'Live interview 1','ap-live2':'Live interview 2','ap-hr-interview':'HR interview','ap-final':'Final selection','ap-onboarding':'Onboarding',
       'in-list':'My interviews','in-applicants':'All applicants','in-applicants-fullstack':'All applicants','in-req':'Requisition details','in-req-fullstack':'Requisition details','in-brief':'Applicant brief','in-rubric':'Evaluation form','in-submit':'Submission'
     };
     const VIEW_ROLE = {
       'oa-dashboard':'oa','oa-pending':'oa','oa-verify':'oa','oa-confirmed':'oa','oa-user-detail':'oa','oa-jobs':'oa','oa-job-detail':'oa','oa-profile':'oa','oa-settings':'oa','oa-audit':'oa',
-      'pa-dashboard':'pa','pa-registrations':'pa','pa-registration-detail':'pa','pa-workspaces':'pa','pa-workspace-detail':'pa','pa-workspace-users':'pa','pa-user-detail':'pa','pa-profile':'pa',
       'sa-dashboard':'sa','sa-onboarding':'sa','sa-onboarding-status':'sa','sa-admin-management':'sa','sa-replace-admin':'sa','sa-audit':'sa',
       'hm-list':'hm','hm-req':'hm','hm-req-status':'hm','hm-jobs':'hm','hm-job':'hm','hm-stages':'hm','hm-candidates':'hm','hm-applicant':'hm','hm-open':'hm','hm-config':'hm','hm-criteria':'hm','hm-publish':'hm','hm-requests':'hm',
       'hr-list':'hr','hr-req':'hr','hr-openings':'hr','hr-opening':'hr','hr-open':'hr','hr-candidates':'hr','hr-prescreen':'hr','hr-grievance':'hr','hr-assess':'hr','hr-ai-failure':'hr','hr-access-denied':'hr','hr-interview':'hr','hr-live-status':'hr','hr-final':'hr','hr-closure':'hr',
-      'ap-list':'ap','ap-jobs':'ap','ap-interest':'ap','ap-intake':'ap','ap-apply-confirm':'ap','ap-myapps':'ap','ap-prescreen-pending':'ap','ap-prescreen-rejected':'ap','ap-status':'ap','ap-readiness':'ap','ap-assess':'ap','ap-interruption':'ap','ap-processing':'ap','ap-outcome':'ap','ap-live':'ap','ap-live2':'ap','ap-hr-interview':'ap','ap-final':'ap','ap-onboarding':'ap','ap-role':'ap','ap-role-pending':'ap','ap-role-rejected':'ap','ap-role-approved':'ap',
+      'ap-list':'ap','ap-jobs':'ap','ap-interest':'ap','ap-intake':'ap','ap-apply-confirm':'ap','ap-myapps':'ap','ap-prescreen-pending':'ap','ap-prescreen-rejected':'ap','ap-status':'ap','ap-readiness':'ap','ap-assess':'ap','ap-vintro':'ap','ap-vread':'ap','ap-vq1':'ap','ap-interruption':'ap','ap-processing':'ap','ap-outcome':'ap','ap-live':'ap','ap-live2':'ap','ap-hr-interview':'ap','ap-final':'ap','ap-onboarding':'ap',
       'in-list':'in','in-applicants':'in','in-applicants-fullstack':'in','in-req':'in','in-req-fullstack':'in','in-brief':'in','in-rubric':'in','in-submit':'in'
     };
     let currentRole = 'hm';
@@ -2687,14 +2864,10 @@
         ? 'Continue through Keycloak to the organisation workspace associated with your identity.'
         : (mode === 'applicant'
           ? 'Sign-in is organisation-scoped: the workspace URL (for example penteai.hirescope.com) selects the organisation, and each organisation authenticates in its own Keycloak realm. Logging into one organisation never signs you in to another.'
-          : 'Continue through Keycloak. Platform Admin authority is evaluated only after successful authentication; there is no public Platform Admin registration.');
+          : 'Continue through Keycloak to access the roles assigned to your organisation identity.');
       document.getElementById('workspace-login-field').style.display = portal ? '' : 'none';
       renderTwoDemoLogins();
       const demoPanel = document.querySelector('#login-screen .demo-creds');
-      if (demoPanel && !demoPanel.textContent.includes('superadmin@pente.ai')) {
-        demoPanel.querySelector('table').insertAdjacentHTML('beforeend', '<tr><td>Super Admin · Pente.AI</td><td><code>superadmin@pente.ai</code></td></tr>');
-        demoPanel.querySelector('.quick').insertAdjacentHTML('beforeend', '<button class="btn" onclick="quick(\'sa\')">Super admin</button>');
-      }
       document.getElementById('login-err').style.display = 'none';
       document.getElementById('login-screen').style.display = 'grid';
       document.getElementById('login-email').focus();
@@ -2716,7 +2889,7 @@
     function renderTwoDemoLogins() {
       const panel = document.querySelector('#login-screen .demo-creds');
       if (!panel) return;
-      panel.innerHTML = '<div class="t">Demo accounts &middot; password <code>demo123</code></div><table><tr><td>Hiring Manager · Pente.AI</td><td><code>hm@pente.ai</code></td></tr><tr><td>HR Reviewer · Pente.AI</td><td><code>hr@pente.ai</code></td></tr><tr><td>HR Reviewer requester (pending) · Pente.AI</td><td><code>anita@example.com</code></td></tr><tr><td>Applicant · Pente.AI</td><td><code>applicant@pente.ai</code></td></tr><tr><td>Interviewer · John Smith</td><td><code>interviewer@pente.ai</code></td></tr><tr><td>Interviewer · Priya Kumar</td><td><code>priya.interviewer@pente.ai</code></td></tr><tr><td>Organisation Admin · Pente.AI</td><td><code>orgadmin@pente.ai</code></td></tr><tr><td>Platform Admin</td><td><code>admin@hirescope.test</code></td></tr></table><div class="quick"><button class="btn" onclick="quick(\'hm\')">Hiring mgr</button><button class="btn" onclick="quick(\'hr\')">HR</button><button class="btn" onclick="quick(\'anita\')">HR Reviewer requester</button><button class="btn" onclick="quick(\'ap\')">Applicant</button><button class="btn" onclick="quick(\'in\')">Interviewer John</button><button class="btn" onclick="quick(\'in2\')">Interviewer Priya</button><button class="btn" onclick="quick(\'oa\')">Org admin</button><button class="btn" onclick="quick(\'pa\')">Platform admin</button></div>';
+      panel.innerHTML = '<div class="t">Demo accounts &middot; password <code>demo123</code></div><table><tr><td>Hiring Manager · Pente.AI</td><td><code>hm@pente.ai</code></td></tr><tr><td>HR · Pente.AI</td><td><code>hr@pente.ai</code></td></tr><tr><td>Applicant · Pente.AI</td><td><code>applicant@pente.ai</code></td></tr><tr><td>Interviewer · John Smith</td><td><code>interviewer@pente.ai</code></td></tr><tr><td>Interviewer · Priya Kumar</td><td><code>priya.interviewer@pente.ai</code></td></tr><tr><td>Org Owner · Pente.AI</td><td><code>orgadmin@pente.ai</code></td></tr><tr><td>Org Admin · Pente.AI</td><td><code>superadmin@pente.ai</code></td></tr></table><div class="quick"><button class="btn" onclick="quick(\'hm\')">Hiring mgr</button><button class="btn" onclick="quick(\'hr\')">HR</button><button class="btn" onclick="quick(\'ap\')">Applicant</button><button class="btn" onclick="quick(\'in\')">Interviewer John</button><button class="btn" onclick="quick(\'in2\')">Interviewer Priya</button><button class="btn" onclick="quick(\'oa\')">Org Owner</button><button class="btn" onclick="quick(\'sa\')">Org Admin</button></div>';
     }
     function showVerification(email) {
       hidePublicScreens();
@@ -2727,7 +2900,7 @@
       document.getElementById('verification-copy').innerHTML = account && account.staffRequest
         ? 'A Keycloak verification message was sent to <b>' + escapeHtml(email) + '</b>. After verification, a pending membership and role-verification request is sent to the <b>' + escapeHtml(account.org) + '</b> Organization Admin. Staff access is not active until approval.'
         : account && account.registrationType === 'organization'
-        ? 'A Keycloak verification message was sent to <b>' + escapeHtml(email) + '</b>. After verification, the organization onboarding request is submitted as <b>PENDING</b> for Platform Admin review; no workspace or realm exists yet and this onboarding user remains unassigned.'
+        ? 'A Keycloak verification message was sent to <b>' + escapeHtml(email) + '</b>. After verification, the organization onboarding request is submitted as <b>PENDING</b> for organisation provisioning review; no workspace or realm exists yet and this onboarding user remains unassigned.'
         : 'A Keycloak verification message was sent to <b>' + escapeHtml(email) + '</b>. The link expires 24 hours after registration.';
       document.getElementById('verification-screen').style.display = 'grid';
     }
@@ -2916,7 +3089,7 @@
       note.style.display = 'block';
     }
     function quick(role) {
-      const keys = { hm:'hm@pente.ai', hr:'hr@pente.ai', ap:'applicant@pente.ai', in:'interviewer@pente.ai', in2:'priya.interviewer@pente.ai', oa:'orgadmin@pente.ai', sa:'superadmin@pente.ai', pa:'admin@hirescope.test', anita:'anita@example.com' };
+      const keys = { hm:'hm@pente.ai', hr:'hr@pente.ai', ap:'applicant@pente.ai', in:'interviewer@pente.ai', in2:'priya.interviewer@pente.ai', oa:'orgadmin@pente.ai', sa:'superadmin@pente.ai' };
       const key = keys[role] || keys.ap;
       const account = USERS[key];
       if (!account) return;
@@ -2988,6 +3161,11 @@
       setTimeout(() => enter({ role:account.role, roles:account.roles || [account.role], name:account.name, org:account.org, email:email, at:Date.now() }), 450);
     }
     function enter(s) {
+      if (!['rc','hm','hr','ap','in','oa','sa'].includes(s.role)) {
+        sessionStorage.removeItem('hs_session');
+        showLanding();
+        return;
+      }
       if (s.org === 'Northstar') s.org = 'Pente.AI'; // migrate prior demo sessions to the workspace name
       sessionStorage.setItem('hs_session', JSON.stringify(s));
       hidePublicScreens();
@@ -3004,7 +3182,7 @@
     function logout() { sessionStorage.removeItem('hs_session'); showLanding(); }
     // confirmOaAssign is defined in the role-verification demo block below.
 
-    const ROLE_ORDER = ['pa','sa','oa','rc','hm','hr','in','ap'];
+    const ROLE_ORDER = ['sa','oa','rc','hm','hr','in','ap'];
     function renderRoleSwitcher(roles, activeRole) {
       const box = document.getElementById('role-switcher');
       if (!box) return;
@@ -3046,7 +3224,7 @@
       // but its authorization claim remains distinct from job-opening HIRING_MANAGER.
       const workspaceRole = role === 'rc' ? 'hm' : role;
       currentRole = workspaceRole;
-      ['hm','hr','ap','in','oa','sa','pa'].forEach(r => {
+      ['hm','hr','ap','in','oa','sa'].forEach(r => {
         document.getElementById(NAVS[r]).style.display = r === workspaceRole ? '' : 'none';
       });
       go(ROLE_FIRST[role]);
@@ -3069,21 +3247,22 @@
       if (id === 'hr-candidates') renderCandidateQueue();
       if (id === 'hm-req-status') showReqStatus();
       if (id === 'hm-list' || id === 'hr-list') renderReqLists();
-      if (id === 'pa-dashboard') renderPlatformSummary();
-      if (id === 'pa-registrations') renderPaRegistrations();
-      if (id === 'pa-workspaces') renderPaWorkspaces();
       if (id === 'oa-pending') renderOaPending();
       if (id === 'oa-confirmed') renderOaConfirmed();
       if (id === 'oa-verify') renderOaVerify();
-      if (id === 'ap-role') renderApRole();
-      if (id === 'ap-role-pending') renderApRolePending();
-      if (id === 'ap-role-rejected') renderApRoleRejected();
-      if (id === 'ap-role-approved') renderApRoleApproved();
       if (currentRole === 'in') renderInterviewerContext();
     }
     function tab(group, id) {
-      document.querySelectorAll('#' + group + ' .tabpane').forEach(p => p.classList.toggle('on', p.id === id));
-      document.querySelectorAll('#' + group + ' .tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+      const tabBar = document.getElementById(group);
+      if (!tabBar) return;
+      const screen = tabBar.closest('.view') || document;
+      screen.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('on', p.id === id));
+      tabBar.querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+      if (group === 'open-tabs') {
+        if (id === 'pane-stage') renderStageControls();
+        if (id === 'pane-config') renderAssessmentStageList();
+        if (id === 'pane-panel') renderInterviewerPanel();
+      }
     }
 
     // ---- Platform Admin interactive demo ----
@@ -3230,7 +3409,7 @@
         result.className = 'banner err notice'; result.textContent = 'Organization details, nominated administrator, valid email, and reason are required.'; result.style.display = 'block'; return;
       }
       result.className = 'banner notice';
-      result.textContent = 'Static demo: onboarding request created as PENDING_REVIEW. Platform Admin must approve and provision the realm. ' + candidate + ' has no Organization Admin access until the invitation, email verification, and acceptance steps succeed.';
+      result.textContent = 'Static demo: onboarding request created as PENDING_REVIEW. Organisation provisioning must approve and provision the realm. ' + candidate + ' has no Org Owner access until the invitation, email verification, and acceptance steps succeed.';
       result.style.display = 'block';
     }
     function initiateAdminReplacement() {
@@ -3249,7 +3428,6 @@
     const RVR_KEY = 'hs_role_verification_requests_v1';
     const CONFIRMED_MEMBERS_KEY = 'hs_confirmed_members_v1';
     const DEFAULT_ROLE_REQUESTS = [
-      { id:'RVR-101', name:'Anita Sharma', email:'anita@example.com', phone:'+91 90000 40404', role:'hr', roleLabel:'HR Reviewer (organisation-level)', job:null, jobLabel:'N/A (organisation-level — one per organisation)', proof:'hr-reviewer-authorization.pdf', comment:'I am the designated HR Reviewer for Pente.AI. Please verify the attached document and grant the organisation-level HR Reviewer role.', submitted:'04 Oct 2026', status:'PENDING', reason:'' },
       { id:'RVR-102', name:'Vikram Rao', email:'vikram@example.com', phone:'+91 90000 20301', role:'rc', roleLabel:'Requisition Creator — organisation-level', job:null, jobLabel:'Not applicable at registration', proof:'requisition-creator-authorization.pdf', comment:'Please verify my proof so I can create requisitions for this organisation.', submitted:'04 Oct 2026', status:'PENDING', reason:'', membershipStatus:'PENDING_VERIFICATION' }
     ];
     const DEFAULT_CONFIRMED_MEMBERS = [
@@ -3258,7 +3436,7 @@
       { id:'cm_anika', name:'Anika Rao', email:'anika@example.com', role:'in', roleLabel:'Interviewer', jobLabel:'Software Engineer · OPEN-2212', orgLevel:false },
       { id:'cm_admin', name:'Pente.AI Organisation Admin', email:'admin@pente.com', role:'oa', roleLabel:'Organization Admin', jobLabel:'N/A (organisation-level)', orgLevel:true }
     ];
-    function loadRoleRequests() { try { const s = JSON.parse(localStorage.getItem(RVR_KEY)); if (Array.isArray(s)) return s.filter(r => r.role === 'hr' || r.role === 'rc' || r.role === 'hm').map(r => (r.role === 'rc' || r.role === 'hm') ? { ...r, role:'rc', roleLabel:'Requisition Creator — organisation-level', job:null, jobLabel:'Not applicable at registration' } : r); } catch (e) {} return JSON.parse(JSON.stringify(DEFAULT_ROLE_REQUESTS)); }
+    function loadRoleRequests() { try { const s = JSON.parse(localStorage.getItem(RVR_KEY)); if (Array.isArray(s)) return s.filter(r => r.email !== 'anita@example.com' && (r.role === 'hr' || r.role === 'rc' || r.role === 'hm')).map(r => (r.role === 'rc' || r.role === 'hm') ? { ...r, role:'rc', roleLabel:'Requisition Creator — organisation-level', job:null, jobLabel:'Not applicable at registration' } : r); } catch (e) {} return JSON.parse(JSON.stringify(DEFAULT_ROLE_REQUESTS)); }
     function loadConfirmedMembers() { try { const s = JSON.parse(localStorage.getItem(CONFIRMED_MEMBERS_KEY)); if (Array.isArray(s)) return s; } catch (e) {} return JSON.parse(JSON.stringify(DEFAULT_CONFIRMED_MEMBERS)); }
     let roleRequests = loadRoleRequests();
     let confirmedMembers = loadConfirmedMembers();
@@ -3740,7 +3918,7 @@
     }
 
     // ---- requisition lifecycle (demo state machine) ----
-    const demo = { req:'draft', reqComment:'' };
+    const demo = { req:'pending', reqComment:'' };
     function submitReq() {
       if (!liveConfigValid()) {
         const note = document.getElementById('li-weight-note');
@@ -3750,7 +3928,7 @@
       }
       demo.req = 'pending'; renderReqLists(); showReqStatus(); go('hm-req-status');
     }
-    function resubmitReq() { demo.req = 'draft'; renderReqLists(); document.getElementById('req-comment-text').textContent = ''; go('hm-req'); }
+    function resubmitReq() { demo.req = 'draft'; renderReqLists(); go('hm-req'); }
     function hrApproveReq() { demo.req = 'approved'; renderReqLists(); renderHrReq(); }
     function hrReturnReq() {
       demo.reqComment = document.getElementById('hr-req-comment').value.trim()
@@ -3761,15 +3939,7 @@
       const pill = document.getElementById('req-state-pill');
       const map = { draft:'draft', pending:'pending', rejected:'rejected', approved:'approved' };
       const label = { draft:'REQUISITION_DRAFT', pending:'REQUISITION_PENDING_APPROVAL', rejected:'REQUISITION_REJECTED', approved:'REQUISITION_APPROVED' };
-      pill.textContent = label[demo.req]; pill.className = 'state ' + map[demo.req];
-      document.getElementById('req-block-pending').style.display = demo.req === 'pending' ? '' : 'none';
-      document.getElementById('req-block-rejected').style.display = demo.req === 'rejected' ? '' : 'none';
-      document.getElementById('req-block-approved').style.display = demo.req === 'approved' ? '' : 'none';
-      ['reqs-draft','reqs-pending','reqs-approved','reqs-opening'].forEach(id => document.getElementById(id).className = 'step');
-      const d = document.getElementById('reqs-draft');
-      if (demo.req === 'pending') { d.className = 'step done'; document.getElementById('reqs-pending').className = 'step on'; }
-      else if (demo.req === 'rejected') { d.className = 'step done'; document.getElementById('reqs-pending').className = 'step rej'; document.getElementById('req-comment-text').textContent = demo.reqComment; }
-      else if (demo.req === 'approved') { d.className = 'step done'; document.getElementById('reqs-pending').className = 'step done'; document.getElementById('reqs-approved').className = 'step appr'; }
+      if (pill) { pill.textContent = label[demo.req]; pill.className = 'state ' + map[demo.req]; }
     }
     function renderReqLists() {
       const st = { draft:['draft','REQUISITION_DRAFT'], pending:['pending','PENDING_APPROVAL'], rejected:['rejected','REQUISITION_REJECTED'], approved:['approved','REQUISITION_APPROVED'] };
@@ -3794,10 +3964,11 @@
       }
     }
 
+    let requisitionStages = [];
+    let requisitionStageSequence = 0;
     function recalcRequisitionWeight() {
-      const ids = ['req-w1','req-w2','req-w3','req-w4'];
       let total = 0;
-      ids.forEach(id => { const el = document.getElementById(id); total += (parseInt(el && el.value, 10) || 0); });
+      document.querySelectorAll('[data-req-weight]').forEach(el => { total += (parseInt(el.value, 10) || 0); });
       const totalEl = document.getElementById('req-weight-total');
       if (totalEl) totalEl.textContent = total + '%';
       const note = document.getElementById('req-weight-note');
@@ -3805,6 +3976,139 @@
         if (total === 100) { note.className = 'banner'; note.textContent = 'Weights total 100% — valid. They rank only; never a single hire score or an automatic decision.'; }
         else { note.className = 'banner warn'; note.textContent = 'Weights total ' + total + '% — must equal 100% before submitting.'; }
       }
+    }
+    function toggleCustomStageName() {
+      const type = document.getElementById('req-stage-type');
+      const custom = document.getElementById('req-custom-stage');
+      if (!type || !custom) return;
+      custom.disabled = type.value !== 'Other';
+      if (custom.disabled) custom.value = '';
+    }
+    function createRequisitionStage(name, type, weight = 0) {
+      return { id: 'stage-' + (++requisitionStageSequence), name, type: type || name, weight, sections: '', questions: '', timing: '', delivery: 'Online' };
+    }
+    function stageDefaults(stage) {
+      const name = (stage.name || '').toLowerCase();
+      if (name.includes('pre-screen')) return { sections:'Application details · eligibility acknowledgements · résumé', questions:'Authorisation to work, location/work-arrangement confirmation, and earliest joining date.', timing:'Applicant-submitted · no timed assessment', delivery:'Online' };
+      if (name.includes('assessment') || name.includes('aptitude')) return { sections:'Work sample · Audio baseline · Structured technical questions', questions:'Diagnose the React checkout performance issue. Explain a frontend tool you learned. Handle a design-system change that risks checkout.', timing:'90 minutes work sample · 12 minutes questions · 1 re-record', delivery:'Online' };
+      if (name.includes('live') || name.includes('online interview')) return { sections:'Technical knowledge · Communication · Problem solving · Role fit', questions:'Discuss performance guardrails, the Android WebView data gap, and an architecture or accessibility trade-off.', timing:'60 minutes · 10 minutes preparation · 2 evaluators', delivery:'Remote meeting' };
+      if (name.includes('hr')) return { sections:'Work arrangement · joining window · compensation · support needs', questions:'Discuss practical needs, compensation alignment, notice period, and accommodation requirements.', timing:'30 minutes · HR reviewer', delivery:'Remote meeting' };
+      return { sections:'Add one or more sections', questions:'Add candidate-facing questions or instructions', timing:'Set timing, preparation, and attempt policy', delivery:'Online' };
+    }
+    function renderRequisitionStages() {
+      const stagesHost = document.getElementById('req-stage-editor');
+      const weightsHost = document.getElementById('req-weight-editor');
+      if (!stagesHost || !weightsHost) return;
+      stagesHost.innerHTML = ''; weightsHost.innerHTML = '';
+      if (!requisitionStages.length) {
+        stagesHost.innerHTML = '<p class="hint">No stages configured yet. Add one stage at a time; the same stage type can be used more than once.</p>';
+        weightsHost.innerHTML = '<p class="hint">No stage weightage yet. A weight field appears here when you add a stage.</p>';
+        recalcRequisitionWeight(); return;
+      }
+      requisitionStages.forEach((stage, index) => {
+        const stageRow = document.createElement('div'); stageRow.className = 'req';
+        const details = document.createElement('div');
+        const label = document.createElement('b'); label.textContent = (index + 1) + '. ';
+        const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.value = stage.name; nameInput.setAttribute('aria-label','Stage name'); nameInput.oninput = () => { stage.name = nameInput.value; renderAssessmentStageList(); renderStageControls(); };
+        const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Type: ' + stage.type + ' · questions, sections, timing, and delivery are set in Stage controls.';
+        details.append(label, nameInput, hint);
+        const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove'; remove.onclick = () => { requisitionStages = requisitionStages.filter(item => item.id !== stage.id); renderRequisitionStages(); renderAssessmentStageList(); renderStageControls(); };
+        stageRow.append(details, remove); stagesHost.append(stageRow);
+        const weightRow = document.createElement('div'); weightRow.className = 'req';
+        const weightLabel = document.createElement('div'); weightLabel.textContent = (index + 1) + '. ' + stage.name;
+        const weight = document.createElement('input'); weight.type = 'number'; weight.min = '0'; weight.max = '100'; weight.value = stage.weight; weight.setAttribute('data-req-weight',''); weight.setAttribute('aria-label',stage.name + ' weightage'); weight.oninput = () => { stage.weight = parseInt(weight.value, 10) || 0; recalcRequisitionWeight(); renderAssessmentStageList(); renderStageControls(); };
+        const suffix = document.createElement('span'); suffix.textContent = '%'; weightRow.append(weightLabel, weight, suffix); weightsHost.append(weightRow);
+      });
+      recalcRequisitionWeight();
+    }
+    function addRequisitionStage() {
+      const type = document.getElementById('req-stage-type');
+      const custom = document.getElementById('req-custom-stage');
+      if (!type || !custom) return;
+      const name = type.value === 'Other' ? custom.value.trim() : type.value;
+      if (!name) { custom.focus(); return; }
+      requisitionStages.push(createRequisitionStage(name, type.value));
+      custom.value = ''; toggleCustomStageName(); renderRequisitionStages(); renderAssessmentStageList(); renderStageControls();
+    }
+    function loadApprovedRequisitionStages() {
+      if (!requisitionStages.length) {
+        requisitionStages = [createRequisitionStage('Pre-screening','Pre-screening',20), createRequisitionStage('Online assessment','Online assessment',25), createRequisitionStage('Live interview','Live interview',40), createRequisitionStage('HR interview','HR interview',15)];
+      }
+      renderRequisitionStages(); renderAssessmentStageList(); renderStageControls();
+    }
+    function openApprovedRequisition() { loadApprovedRequisitionStages(); go('hm-open'); }
+    function renderAssessmentStageList() {
+      const host = document.getElementById('assessment-stage-list');
+      if (!host) return;
+      host.innerHTML = '';
+      if (!requisitionStages.length) { host.innerHTML = '<p class="hint">No stages have been added to this requisition yet.</p>'; return; }
+      requisitionStages.forEach((stage, index) => { const row = document.createElement('div'); row.className = 'req'; const detail = document.createElement('div'); const title = document.createElement('b'); title.textContent = (index + 1) + '. ' + stage.name; const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Inherited from requisition · configure sections and questions in Stage controls.'; detail.append(title, hint); const weight = document.createElement('span'); weight.className = 'state readonly'; weight.textContent = (stage.weight || 0) + '%'; row.append(detail, weight); host.append(row); });
+    }
+    function renderStageControls() {
+      const host = document.getElementById('stage-controls-list');
+      if (!host) return;
+      host.innerHTML = '';
+      if (!requisitionStages.length) { host.innerHTML = '<p class="hint">No stage controls yet. Add stages on New role creation, then return here to set their questions, timing, delivery, and weightage.</p>'; return; }
+      requisitionStages.forEach((stage, index) => {
+        const defaults = stageDefaults(stage); stage.sections ||= defaults.sections; stage.questions ||= defaults.questions; stage.timing ||= defaults.timing; stage.delivery ||= defaults.delivery;
+        const card = document.createElement('div'); card.className = 'card'; card.style.marginTop = '14px';
+        card.innerHTML = '<h2></h2><div class="grid2" style="margin-top:10px"><div><label class="f">Stage name</label><input data-field="name" type="text" /><label class="f">Sections</label><input data-field="sections" type="text" /><label class="f">Candidate questions / instructions</label><textarea data-field="questions" style="min-height:94px"></textarea><label class="f">Timing, preparation, and attempts</label><input data-field="timing" type="text" /></div><div><label class="f">Delivery mode</label><select data-field="delivery"><option>Online</option><option>Remote meeting</option><option>In person</option><option>Hybrid</option></select><label class="f">Stage weightage</label><input data-field="weight" type="number" min="0" max="100" /><label class="f">Evaluation and completion rule</label><input data-field="completion" type="text" value="Evidence submitted · HR records advance, hold, or reject" /><label class="f">Accommodation setting</label><select><option>Allow accommodation request · HR reviews privately</option><option>No additional accommodation required</option></select></div></div>';
+        card.querySelector('h2').textContent = 'Stage ' + (index + 1) + ' · ' + stage.name;
+        const set = (field, value) => { const element = card.querySelector('[data-field="' + field + '"]'); element.value = value; element.oninput = () => { stage[field] = element.value; if (field === 'name') { renderRequisitionStages(); renderAssessmentStageList(); card.querySelector('h2').textContent = 'Stage ' + (index + 1) + ' · ' + stage.name; } if (field === 'weight') { stage.weight = parseInt(element.value, 10) || 0; renderRequisitionStages(); renderAssessmentStageList(); } }; };
+        set('name', stage.name); set('sections', stage.sections); set('questions', stage.questions); set('timing', stage.timing); set('delivery', stage.delivery); set('weight', stage.weight);
+        host.append(card);
+      });
+    }
+    function addLiveEvaluationSection() {
+      const host = document.getElementById('li-section-editor');
+      if (!host) return;
+      const row = document.createElement('div'); row.className = 'req';
+      const name = document.createElement('input'); name.type = 'text'; name.value = 'New evaluation section'; name.setAttribute('aria-label','Evaluation section name');
+      const weight = document.createElement('input'); weight.type = 'number'; weight.value = '0'; weight.min = '0'; weight.max = '100'; weight.setAttribute('data-li-weight',''); weight.setAttribute('aria-label','Evaluation section weightage'); weight.oninput = recalcLiveWeight;
+      const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove'; remove.onclick = () => { row.remove(); recalcLiveWeight(); renderInterviewerPanel(); };
+      row.append(name, weight, remove); host.append(row); name.focus(); recalcLiveWeight(); renderInterviewerPanel();
+    }
+    function renderInterviewerPanel() {
+      const summary = document.getElementById('panel-evaluation-summary');
+      if (!summary) return;
+      const sections = Array.from(document.querySelectorAll('#li-section-editor input[type="text"]')).map(input => input.value.trim()).filter(Boolean);
+      summary.textContent = sections.length ? 'Live evaluation sections inherited from this requisition: ' + sections.join(' · ') + '.' : 'Add Live Interview evaluation sections on New role creation; they will appear here for panel assignment.';
+    }
+    function addFairPackArea() {
+      const host = document.getElementById('fairpack-editor');
+      if (!host) return;
+      const row = document.createElement('div'); row.className = 'req';
+      const enabled = document.createElement('input'); enabled.type = 'checkbox'; enabled.checked = true;
+      const name = document.createElement('input'); name.type = 'text'; name.value = 'New evidence area'; name.setAttribute('aria-label','FairPack evidence area');
+      const source = document.createElement('select'); source.innerHTML = '<option>WORK SAMPLE</option><option>ASSESSMENT</option><option>LIVE INTERVIEW</option>';
+      const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove'; remove.onclick = () => row.remove();
+      row.append(enabled, name, source, remove); host.append(row); name.focus();
+    }
+    function filterSampleRequisitions(status) {
+      document.querySelectorAll('[data-req-status]').forEach(row => { row.style.display = status === 'all' || row.dataset.reqStatus === status ? '' : 'none'; });
+    }
+    function publishOpening(button) {
+      if (button) { button.textContent = 'Published · ACTIVE'; button.disabled = true; }
+      const result = document.getElementById('hm-publish-result');
+      const recipients = ['panel-member-1','panel-member-2'].map(id => document.getElementById(id)?.value.split(' · ')[0]).filter(Boolean);
+      if (result) { result.textContent = 'Opening published. Notification emails were sent to ' + (recipients.join(' and ') || 'the selected interviewers') + ' with their Live Interview sections, stage instructions, and evaluator due date.'; result.style.display = 'block'; }
+    }
+    function openHmApplicant(id, name, email, stage) {
+      const set = (elementId, value) => { const element = document.getElementById(elementId); if (element) element.textContent = value; };
+      set('hm-applicant-id', id);
+      set('hm-applicant-name', name);
+      set('hm-applicant-email', email);
+      set('hm-applicant-stage', stage);
+      set('hm-applicant-subtitle', 'Applicant ' + id + ' · JOB-001 Senior React Developer · current stage ' + stage + '.');
+      go('hm-applicant');
+    }
+    function toggleApRecording(buttonId, waveId) {
+      const button = document.getElementById(buttonId);
+      const wave = document.getElementById(waveId);
+      if (!button || !wave) return;
+      const recording = !wave.classList.contains('live');
+      wave.classList.toggle('live', recording);
+      button.textContent = recording ? 'Stop recording' : 'Start recording';
     }
     function saveHmComment() {
       const note = document.getElementById('hm-comment-note');
@@ -3855,9 +4159,8 @@
       catch (e) { return value; }
     }
     function recalcLiveWeight() {
-      const ids = ['li-w1','li-w2','li-w3','li-w4'];
       let total = 0;
-      ids.forEach(id => { const el = document.getElementById(id); total += (parseInt(el && el.value, 10) || 0); });
+      document.querySelectorAll('[data-li-weight]').forEach(el => { total += (parseInt(el.value, 10) || 0); });
       const totalEl = document.getElementById('li-weight-total');
       if (totalEl) totalEl.textContent = total + '%';
       const note = document.getElementById('li-weight-note');
@@ -3869,7 +4172,7 @@
     function liveConfigValid() {
       const enabled = (document.getElementById('li-enabled') && document.getElementById('li-enabled').value) !== 'Disabled';
       if (!enabled) return true;
-      const weights = ['li-w1','li-w2','li-w3','li-w4'].reduce((s,id) => s + (parseInt(document.getElementById(id) && document.getElementById(id).value, 10) || 0), 0);
+      const weights = Array.from(document.querySelectorAll('[data-li-weight]')).reduce((sum, el) => sum + (parseInt(el.value, 10) || 0), 0);
       return weights === 100;
     }
     function scheduleLiveInterview() {
@@ -4011,6 +4314,15 @@
     // ---- nav wiring & session restore ----
     document.querySelectorAll('.nav button[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
     window.addEventListener('DOMContentLoaded', () => {
+      // Retire the former Platform Admin and HR Reviewer requester views from the runnable mockup.
+      document.querySelectorAll('#nav-pa, [id^="pa-"], [id^="ap-role"]').forEach(element => element.remove());
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const replacements = [['Organization Admin', 'Org Owner'], ['Organisation Admin', 'Org Owner'], ['Super Admin', 'Org Admin'], ['Platform Admin', 'Organisation provisioning service']];
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.parentElement?.closest('script, style')) continue;
+        replacements.forEach(([from, to]) => { node.nodeValue = node.nodeValue.replaceAll(from, to); });
+      }
       purgeExpiredApplicants();
       const raw = sessionStorage.getItem('hs_session');
       if (raw) { try { enter(JSON.parse(raw)); } catch (e) { sessionStorage.removeItem('hs_session'); } }
