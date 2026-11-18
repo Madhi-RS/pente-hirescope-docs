@@ -327,6 +327,14 @@
     .sub { font-size: 13px; line-height: 1.6; }
     .card, .stat, .flow-node, .test, .tbl { border-radius: 2px; box-shadow: none; }
     .card { padding: 18px; }
+    .offer-letter { background:#fffdf9; border:1px solid #d9cec2; padding:24px; line-height:1.65; font-family:Georgia, serif; color:#2a2522; }
+    .offer-letter h2 { font-family:Fraunces, Georgia, serif; font-size:22px; margin-bottom:16px; }
+    .offer-letter .letter-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; font-family:"IBM Plex Mono", monospace; font-size:11px; color:#5d554d; }
+    .progress-track { height:8px; background:#eee7de; border-radius:99px; overflow:hidden; margin-top:7px; }
+    .progress-fill { height:100%; background:var(--teal); border-radius:99px; transition:width .2s ease; }
+    .activity-list { list-style:none; padding:0; margin:8px 0 0; }
+    .activity-list li { border-top:1px solid var(--line); padding:8px 0; font-size:12px; color:var(--muted); }
+    .task-owner { min-width:84px; font-size:11px; font-family:"IBM Plex Mono", monospace; color:var(--teal-dark); }
     .stat { border-top: 3px solid var(--ink); }
     .stat .n { font-size: 30px; }
     .tbl { border-radius: 2px; }
@@ -564,11 +572,11 @@
         <div class="sec">HR reviewer</div>
         <button class="active" data-view="hr-list">Dashboard</button>
         <div class="sec">Requisitions</div>
-        <button data-view="hr-req">1. Requisition approval</button>
+        <button data-view="hr-req-list">1. Requisition list</button>
+        <button data-view="hr-req">2. Requisition review</button>
         <div class="sec">Openings</div>
-        <button data-view="hr-openings">2. Approved openings</button>
-        <button data-view="hr-opening">3. Opening details</button>
-        <button data-view="hr-open">4. Opening approval</button>
+        <button data-view="hr-openings">3. Job opening list</button>
+        <button data-view="hr-opening">4. Opening review</button>
         <div class="sec">Applicants</div>
         <button data-view="hr-candidates">5. Candidate review queue</button>
         <button data-view="hr-prescreen">6. Pre-screen decision</button>
@@ -578,8 +586,12 @@
         <button data-view="hr-interview">9. Schedule live interview</button>
         <button data-view="hr-live-status">10. Live interview status</button>
         <button data-view="hr-final">11. Final decision</button>
+        <div class="sec">Offer &amp; onboarding</div>
+        <button data-view="hr-offer">12. Offer management</button>
+        <button data-view="hr-onboarding">13. Onboarding dashboard</button>
+        <button data-view="hr-employees">14. Employee directory</button>
         <div class="sec">Closure</div>
-        <button data-view="hr-closure">12. Headcount &amp; closure</button>
+        <button data-view="hr-closure">15. Headcount &amp; closure</button>
       </nav>
       <nav class="nav" id="nav-ap" style="display:none">
         <div class="sec">Applicant</div>
@@ -1055,10 +1067,12 @@
 
       <div id="hm-req" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>New role creation</h1>
+          <h1 id="req-form-title">New role creation</h1>
           <span class="state draft" id="hm-req-pill">REQUISITION_DRAFT</span>
         </div>
-        <p class="sub">Raise a hiring need. It becomes a job opening only after an authorised HR Reviewer approves it.</p>
+        <p class="sub" id="req-form-subtitle">Raise a hiring need. It becomes a job opening only after an authorised HR Reviewer approves it.</p>
+        <div id="req-return-comment" class="banner warn" style="display:none"></div>
+        <div id="req-form-notice" class="banner notice" style="display:none"></div>
         <div class="stepper">
           <div class="step on"><div class="dot">1</div><span>Draft</span></div><div class="conn"></div>
           <div class="step"><div class="dot">2</div><span>Pending approval</span></div><div class="conn"></div>
@@ -1113,12 +1127,12 @@ HR review guidance
           </div>
         </div>
         <div class="card" style="margin-top:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center"><h2>Stages, sections, questions &amp; weightage</h2><span class="chip warn">Configured here · not hard-coded</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><h2>Stages &amp; weightage</h2><span class="chip warn">Configured here · not hard-coded</span></div>
           <p class="hint" style="margin-top:6px">The recruitment sequence is job-specific. Add, name, reorder, and configure its stages here; the selected sequence, sections, questions, timing, and weightage carry into the job opening.</p>
           <div class="grid2" style="margin-top:12px">
             <div>
-              <div class="test"><b>Add a stage</b><div class="grid2" style="margin-top:8px"><div><label class="f">Stage type</label><select id="req-stage-type" onchange="toggleCustomStageName()"><option>Pre-screening</option><option>Online assessment</option><option>Online interview</option><option>Live interview</option><option>HR interview</option><option>Other</option></select></div><div><label class="f">Custom stage name (for Other)</label><input id="req-custom-stage" type="text" placeholder="e.g. Online aptitude" disabled /></div></div><button class="btn" style="margin-top:10px" onclick="addRequisitionStage()">Add selected stage</button></div>
-              <div style="margin-top:10px"><b>Configured stages</b><div id="req-stage-editor"><p class="hint">No stages configured yet. Add one stage at a time; the same stage type can be used more than once.</p></div></div>
+              <div class="test"><b>Add a stage</b><div class="grid2" style="margin-top:8px"><div><label class="f">Stage type</label><select id="req-stage-type" onchange="toggleCustomStageName()"><option>Pre-screening</option><option>Online assessment</option><option>Online interview</option><option>Live interview</option><option>HR interview</option><option>Other</option></select></div><div><label class="f">Enter name</label><input id="req-custom-stage" type="text" placeholder="Optional custom name, e.g. Online aptitude" /></div></div><button id="req-add-stage" class="btn" style="margin-top:10px" onclick="addRequisitionStage()">Add selected stage</button></div>
+              <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Configured stages</b><div style="display:flex;gap:8px"><button id="req-stage-save" class="btn primary" type="button" onclick="saveRequisitionStages()" disabled>Save stages</button><button id="req-stage-edit" class="btn" type="button" onclick="editRequisitionStages()" style="display:none">Edit stages</button></div></div><div id="req-stage-editor"><p class="hint">No stages configured yet. Add one stage at a time; the same stage type can be used more than once.</p></div><p id="req-stage-save-status" class="hint" aria-live="polite"></p></div>
               <div class="stepper" style="margin-top:4px;display:none">
                 <div class="step done"><div class="dot">1</div><span>Pre-screening</span></div><div class="conn"></div>
                 <div class="step on"><div class="dot">2</div><span>Online assessment</span></div><div class="conn"></div>
@@ -1158,8 +1172,9 @@ HR review guidance
           </div>
         </div>
         <div style="margin-top:16px;display:flex;gap:8px">
-          <button class="btn">Save draft</button>
-          <button class="btn primary" onclick="submitReq()">Submit for HR approval →</button>
+          <button id="req-save-draft" class="btn" type="button" onclick="saveRequisitionDraft()">Save draft</button>
+          <button id="req-submit" class="btn primary" type="button" onclick="submitRequisitionFromDetail()">Submit for HR approval →</button>
+          <button id="req-create-opening" class="btn primary" type="button" onclick="createJobOpeningFromApprovedRequisition()" style="display:none">Create job opening →</button>
         </div>
       </div>
 
@@ -1174,15 +1189,16 @@ HR review guidance
             <table class="tbl">
               <thead><tr><th>Requisition</th><th>Role</th><th>Positions</th><th>Version</th><th>Status</th><th>Last activity</th><th></th></tr></thead>
               <tbody>
-                <tr data-req-status="pending"><td class="mono">REQ-1842</td><td>Senior Product Manager</td><td>1</td><td>v1</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Submitted to HR · 08 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
-                <tr data-req-status="draft"><td class="mono">REQ-1841</td><td>Staff Engineer</td><td>2</td><td>v1</td><td><span class="state draft">DRAFT</span></td><td>Saved by Hiring Manager · 07 Oct 2026</td><td><button class="btn" onclick="go('hm-req')">View</button></td></tr>
-                <tr data-req-status="pending"><td class="mono">REQ-1840</td><td>Data Analyst</td><td>1</td><td>v2</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Resubmitted to HR · 06 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
-                <tr data-req-status="returned"><td class="mono">REQ-1839</td><td>Product Designer</td><td>1</td><td>v1</td><td><span class="state rejected">RETURNED_FOR_CHANGES</span></td><td>HR comment received · 05 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
-                <tr data-req-status="suspended"><td class="mono">REQ-1838</td><td>QA Engineer</td><td>2</td><td>v1</td><td><span class="state suspended">SUSPENDED</span></td><td>Headcount paused · 04 Oct 2026</td><td><button class="btn" onclick="go('hm-req-status')">View</button></td></tr>
-                <tr data-req-status="approved"><td class="mono">REQ-1837</td><td>Senior React Developer</td><td>2</td><td>v1</td><td><span class="state approved">REQUISITION_APPROVED</span></td><td>Approved by HR · 03 Oct 2026</td><td><button class="btn" onclick="go('hm-open')">View</button></td></tr>
+                <tr data-req-status="pending" data-sample-requisition-id="REQ-1842"><td class="mono">REQ-1842</td><td>Senior Product Manager</td><td>1</td><td>v1</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Submitted to HR · 08 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1842')">View</button></td></tr>
+                <tr data-req-status="draft" data-sample-requisition-id="REQ-1841"><td class="mono">REQ-1841</td><td>Staff Engineer</td><td>2</td><td>v1</td><td><span class="state draft">DRAFT</span></td><td>Saved by Hiring Manager · 07 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1841')">View</button></td></tr>
+                <tr data-req-status="pending" data-sample-requisition-id="REQ-1840"><td class="mono">REQ-1840</td><td>Data Analyst</td><td>1</td><td>v2</td><td><span class="state pending">PENDING_APPROVAL</span></td><td>Resubmitted to HR · 06 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1840')">View</button></td></tr>
+                <tr data-req-status="returned" data-sample-requisition-id="REQ-1839"><td class="mono">REQ-1839</td><td>Product Designer</td><td>1</td><td>v1</td><td><span class="state rejected">RETURNED_FOR_CHANGES</span></td><td>HR comment received · 05 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1839')">View</button></td></tr>
+                <tr data-req-status="suspended" data-sample-requisition-id="REQ-1838"><td class="mono">REQ-1838</td><td>QA Engineer</td><td>2</td><td>v1</td><td><span class="state suspended">SUSPENDED</span></td><td>Headcount paused · 04 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1838')">View</button></td></tr>
+                <tr data-req-status="approved" data-sample-requisition-id="REQ-1837"><td class="mono">REQ-1837</td><td>Senior React Developer</td><td>2</td><td>v1</td><td><span class="state approved">REQUISITION_APPROVED</span></td><td>Approved by HR · 03 Oct 2026</td><td><button class="btn" onclick="viewSampleRequisition('REQ-1837')">View</button></td></tr>
               </tbody>
             </table>
           </div>
+          <div id="sample-req-detail" class="card" style="display:none;margin-top:14px" aria-live="polite"></div>
         </div>
         <div class="card" style="margin-top:14px">
           <div class="req"><div><b>Approved requisitions ready for an opening</b><div class="hint">The opening inherits its role, headcount, work arrangement, eligibility, stages, weights, and live-interview sections from the approved requisition.</div></div><span class="state approved">1 READY</span></div>
@@ -1192,11 +1208,12 @@ HR review guidance
 
       <div id="hm-open" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>Create a job opening <span class="flow-marker" aria-label="Hiring Manager flow screen 6">6</span></h1>
+          <h1 id="opening-form-title">Create a job opening <span class="flow-marker" aria-label="Hiring Manager flow screen 6">6</span></h1>
           <span class="state draft">OPENING_DRAFT</span>
         </div>
-        <p class="sub">Built from the approved requisition. The approved stage, section, question, and scoring configuration is carried forward; the Hiring Manager adds opening operations and stage-specific interviewer nominations for HR approval.</p>
+        <p class="sub" id="opening-form-subtitle">Built from the approved requisition. The approved stage, section, question, and scoring configuration is carried forward; the Hiring Manager adds opening operations and stage-specific interviewer nominations for HR approval.</p>
         <div class="banner warn">HR approves the opening/panel package, then the Hiring Manager—not HR—publishes it.</div>
+        <div id="opening-source-banner" class="banner notice" style="display:none"></div>
 
         <div class="tabs" id="open-tabs">
           <button class="on" data-tab="pane-opening" onclick="tab('open-tabs','pane-opening')">Opening</button>
@@ -1211,11 +1228,11 @@ HR review guidance
           <div class="grid2">
             <div class="card">
               <h2>Opening details</h2>
-              <label class="f">Opening title</label><input type="text" value="Senior React Developer" />
-              <label class="f">Requisition / version</label><input type="text" value="REQ-1837 · approved v1" disabled />
-              <label class="f">Location &amp; work model</label><select><option>Bengaluru · Hybrid (3 days in office)</option><option>Remote · India</option><option>On site · Bengaluru</option></select>
+              <label class="f">Opening title</label><input id="opening-title" type="text" value="Senior React Developer" />
+              <label class="f">Requisition / version</label><input id="opening-requisition" type="text" value="REQ-1837 · approved v1" disabled />
+              <label class="f">Location &amp; work model</label><select id="opening-location"><option>Bengaluru · Hybrid (3 days in office)</option><option>Remote · India</option><option>On site · Bengaluru</option></select>
               <label class="f">Application window</label><input type="text" value="8–18 October 2026 · 23:59 IST" />
-              <label class="f">Open positions</label><input type="number" value="2" min="1" />
+              <label class="f">Open positions</label><input id="opening-positions" type="number" value="2" min="1" />
             </div>
             <div class="card">
               <h2>Publication &amp; approval</h2>
@@ -1356,7 +1373,7 @@ HR review guidance
 
         <div style="margin-top:16px;display:flex;gap:8px">
           <button class="btn" onclick="go('hm-req-status')">← Back</button>
-          <button class="btn primary" onclick="go('hm-config')">Continue to assessment configuration →</button>
+          <button class="btn primary" onclick="openStageControls()">Continue to stage controls →</button>
         </div>
       </div>
 
@@ -1616,13 +1633,13 @@ HR review guidance
           <div class="stat"><div class="n">0 of 1</div><div class="l">Available to select</div><div class="metric-note">Target − committed capacity</div></div>
         </div>
 
-        <div class="grid2">
+        <div style="display:grid;gap:14px">
           <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center"><h2>Pending requisitions</h2><button class="link-btn" onclick="go('hr-req')">Open approval</button></div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><div><h2>Requisitions</h2><p class="hint" style="margin-top:4px">Two recent requisitions. Review the full list for all records.</p></div><button class="link-btn" onclick="go('hr-req-list')">View all</button></div>
             <div style="overflow-x:auto;margin-top:10px">
               <table class="tbl">
-                <thead><tr><th>Ref</th><th>Role</th><th>Requester</th><th>Submitted</th><th>State</th></tr></thead>
-                <tbody>
+                <thead><tr><th>Requisition</th><th>Role</th><th>Requester</th><th>Status</th><th></th></tr></thead>
+                <tbody id="hr-dashboard-req-rows">
                   <tr><td class="mono">REQ-1840</td><td>Data Analyst</td><td>Priya Menon</td><td>05 Oct 2026 · resubmitted v2</td><td><span class="state pending">PENDING_APPROVAL</span><div class="hint">Resubmitted first in queue</div></td></tr>
                   <tr><td class="mono">REQ-1842</td><td>Senior Product Manager</td><td>Priya Menon</td><td>04 Oct 2026</td><td id="hr-list-req1842-state"><span class="state pending">PENDING_APPROVAL</span></td></tr>
                 </tbody>
@@ -1631,11 +1648,11 @@ HR review guidance
             <div class="hint" style="margin-top:10px">Resubmitted requisitions are prioritised first in the queue — REQ-1840 v2 sorts above a first submission.</div>
           </div>
           <div class="card">
-            <h2>Returned / rejected</h2>
+            <div style="display:flex;justify-content:space-between;align-items:center"><div><h2>Job openings</h2><p class="hint" style="margin-top:4px">Two recent job openings. Review the full list for all records.</p></div><button class="link-btn" onclick="go('hr-openings')">View all</button></div>
             <div style="overflow-x:auto;margin-top:10px">
               <table class="tbl">
-                <thead><tr><th>Ref</th><th>Role</th><th>Requester</th><th>State</th></tr></thead>
-                <tbody>
+                <thead><tr><th>Opening</th><th>Role</th><th>Requisition</th><th>Status</th><th></th></tr></thead>
+                <tbody id="hr-dashboard-opening-rows">
                   <tr><td class="mono">REQ-1839</td><td>Product Designer</td><td>Priya Menon</td><td><span class="state rejected">RETURNED</span></td></tr>
                 </tbody>
               </table>
@@ -1644,8 +1661,8 @@ HR review guidance
           </div>
         </div>
 
-        <div class="grid2">
-          <div class="card">
+        <div style="display:contents">
+          <div class="card" style="display:none">
             <div style="display:flex;justify-content:space-between;align-items:center"><h2>Approved openings</h2><button class="link-btn" onclick="go('hr-openings')">View all</button></div>
             <div style="overflow-x:auto;margin-top:10px">
               <table class="tbl">
@@ -1673,14 +1690,28 @@ HR review guidance
         <div class="banner warn" style="margin-top:12px">A manager cannot approve their own requisition. Approve/return actions live on the requisition detail screen.</div>
       </div>
 
+      <div id="hr-req-list" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div><h1>Requisitions</h1><p class="sub">All organisation requisitions. Filter by status, then open a record to review its details or update its status.</p></div>
+          <span class="chip on">Pente.AI · HR Reviewer</span>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap">
+            <div style="min-width:220px"><label class="f" for="hr-req-filter">Status</label><select id="hr-req-filter" onchange="renderHrRequisitionList()"><option value="ALL">All statuses</option><option value="PENDING_APPROVAL">Pending approval</option><option value="DRAFT">Draft</option><option value="RETURNED">Returned</option><option value="APPROVED">Approved</option><option value="WITHDRAWN">Withdrawn</option></select></div>
+            <span class="hint" id="hr-req-list-count" aria-live="polite"></span>
+          </div>
+          <div style="overflow-x:auto;margin-top:14px"><table class="tbl"><thead><tr><th>Requisition</th><th>Role</th><th>Requester</th><th>Positions</th><th>Submitted</th><th>Status</th><th></th></tr></thead><tbody id="hr-req-list-rows"></tbody></table></div>
+        </div>
+      </div>
+
       <div id="hr-req" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>Requisition approval</h1>
+          <div><h1>Requisition review</h1><p class="sub">Review the full record and update its status.</p></div>
           <span class="state pending">QUEUE · organisation-scoped</span>
         </div>
         <p class="sub">Only an HR Reviewer authorised for the owning organisation can approve or return. A manager cannot approve their own work.</p>
-        <div class="queue">
-          <div class="mono id">REQ-1842</div>
+        <div class="queue" id="hr-req-detail-queue">
+          <div class="mono id" id="hr-req-detail-id">REQ-1842</div>
           <div class="grow">
             <b>Senior Product Manager</b> · 1 headcount · ₹32L–₹48L
             <div class="hint">Submitted by Priya Menon · Growth activation · v1 (locked)</div>
@@ -1728,11 +1759,14 @@ HR review guidance
         </div>
 
         <div class="card" style="margin-top:14px">
-          <label class="f">Return comment (required on return)</label>
+          <h2>Update status</h2>
+          <p class="hint" id="hr-req-review-help" style="margin-top:6px">This requisition is awaiting approval. Add a review comment before updating its status.</p>
+          <label class="f" for="hr-req-status-select">Status</label>
+          <select id="hr-req-status-select" onchange="updateHrReqReviewHelp()"><option value="DRAFT">DRAFT</option><option value="PENDING_APPROVAL">PENDING_APPROVAL</option><option value="RETURNED">RETURNED</option><option value="APPROVED">APPROVED</option><option value="WITHDRAWN">WITHDRAWN</option></select>
+          <label class="f" for="hr-req-comment">Review comment <span id="hr-req-comment-required">(required while approval is pending)</span></label>
           <textarea id="hr-req-comment" style="min-height:64px">Business justification is thin — please expand the 90-day ownership and how this headcount pays back.</textarea>
           <div id="hr-req-actions" style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn danger" onclick="hrReturnReq()">Return with comment</button>
-            <button class="btn good" onclick="hrApproveReq()">Approve</button>
+            <button class="btn primary" onclick="saveHrRequisitionStatus()">Update status</button>
           </div>
           <div class="banner" id="hr-req-result" style="display:none"></div>
         </div>
@@ -1765,22 +1799,30 @@ HR review guidance
 
       <div id="hr-openings" class="view">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div><h1>Approved openings</h1><p class="sub">Openings activated from approved requisitions. Each opening carries its own configuration and stage sequence; job requirements are read from its requisition, not duplicated.</p></div>
+          <div><h1>Job openings</h1><p class="sub">All requisition-derived job openings. Filter by status, then open a record to review its details or update its status.</p></div>
           <span class="chip on">Pente.AI · HR Reviewer</span>
         </div>
-        <div style="overflow-x:auto;margin-top:16px">
+        <div class="card" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap"><div style="min-width:240px"><label class="f" for="hr-opening-filter">Status</label><select id="hr-opening-filter" onchange="renderHrOpeningList()"><option value="ALL">All statuses</option><option value="DRAFT">Draft</option><option value="PENDING_OPENING_APPROVAL">Pending approval</option><option value="RETURNED">Returned</option><option value="APPROVED_TO_PUBLISH">Approved to publish</option><option value="PUBLISHED">Published</option><option value="SUSPENDED">Suspended</option><option value="CLOSED">Closed</option></select></div><span class="hint" id="hr-opening-list-count" aria-live="polite"></span></div>
+        <div style="overflow-x:auto;margin-top:14px">
           <table class="tbl">
             <thead><tr><th>Opening</th><th>Role</th><th>Requisition</th><th>Target</th><th>Filled</th><th>Available</th><th>State</th><th></th></tr></thead>
-            <tbody>
+            <tbody id="hr-opening-list-rows">
               <tr><td class="mono">OPEN-2211</td><td>Senior Product Manager</td><td class="mono">REQ-1842</td><td>1</td><td>0</td><td>1</td><td><span class="state approved">ACTIVE · v1</span></td><td><button class="btn" onclick="go('hr-opening')">View</button></td></tr>
               <tr><td class="mono">OPEN-2205</td><td>Backend Engineer</td><td class="mono">REQ-1835</td><td>2</td><td>1</td><td>1</td><td><span class="state approved">ACTIVE · v1</span></td><td><button class="btn" onclick="go('hr-opening')">View</button></td></tr>
             </tbody>
           </table>
-        </div>
+        </div></div>
         <div class="banner">Available to select = target − committed capacity. Filled records completed onboarding and does not reopen capacity.</div>
       </div>
 
       <div id="hr-opening" class="view">
+        <div class="card" id="hr-opening-review-card">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;flex-wrap:wrap"><div><h2>Update opening status</h2><p class="hint" id="hr-opening-review-help" style="margin-top:6px">Select a status and record the decision context.</p></div><span id="hr-opening-review-pill" class="state pending">PENDING_OPENING_APPROVAL</span></div>
+          <div class="grid2"><div><label class="f" for="hr-opening-status-select">Status</label><select id="hr-opening-status-select" onchange="updateHrOpeningReviewHelp()"><option value="DRAFT">DRAFT</option><option value="PENDING_OPENING_APPROVAL">PENDING_OPENING_APPROVAL</option><option value="RETURNED">RETURNED</option><option value="APPROVED_TO_PUBLISH">APPROVED_TO_PUBLISH</option><option value="PUBLISHED">PUBLISHED</option><option value="SUSPENDED">SUSPENDED</option><option value="CLOSED">CLOSED</option></select></div><div><label class="f" for="hr-opening-comment">Review comment <span id="hr-opening-comment-required">(required while approval is pending)</span></label><textarea id="hr-opening-comment" style="min-height:64px" placeholder="Add the reason or decision context for the Hiring Manager."></textarea></div></div>
+          <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" onclick="saveHrOpeningStatus()">Update status</button></div>
+          <div class="banner" id="hr-opening-result" style="display:none"></div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <div><h1>Opening details</h1><p class="sub">OPEN-2211 · Senior Product Manager · activated from REQ-1842.</p></div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="state approved">ACTIVE · v1</span><button class="btn" onclick="go('hr-openings')">Back to openings</button></div>
@@ -2112,15 +2154,17 @@ HR review guidance
           <div class="hint" style="margin-top:6px">AI seven-area result · John Smith · Priya Kumar · HR comments — each visibly separate.</div>
           <div class="grid2" style="margin-top:10px">
             <div class="test"><b>Decision</b>
-              <div class="req"><input type="radio" name="fin" checked /><div><b>ADVANCED</b></div></div>
-              <div class="req"><input type="radio" name="fin" /><div><b>HOLD</b></div></div>
-              <div class="req"><input type="radio" name="fin" /><div><b>REJECTED</b></div></div>
+              <div class="req"><input id="final-cleared" type="radio" name="fin" value="CLEARED" checked /><div><b>HR ROUND CLEARED</b><div class="hint">Eligible to proceed to candidate-specific offer creation.</div></div></div>
+              <div class="req"><input id="final-hold" type="radio" name="fin" value="HOLD" /><div><b>HOLD</b></div></div>
+              <div class="req"><input id="final-rejected" type="radio" name="fin" value="REJECTED" /><div><b>REJECTED</b></div></div>
             </div>
             <div class="card" style="margin:0"><label class="f">Confidential internal HR note</label><textarea style="min-height:62px">Evidence supports progressing the candidate. Preserve detailed rationale for HR only.</textarea><label class="f">Applicant-visible status</label><input value="Your application has progressed to the next stage." /><div class="hint" style="margin-top:8px">Notification includes this status only. It excludes internal reasoning, strengths/weaknesses, AI output, and interviewer evaluations.</div></div>
           </div>
-          <button class="btn good" style="margin-top:12px">Record ADVANCED · notify applicant</button>
+          <button class="btn good" style="margin-top:12px" onclick="recordHrFinalDecision()">Record final HR decision · notify applicant</button>
+          <button class="btn primary" id="proceed-offer-button" style="margin-top:12px" onclick="proceedToOfferCreation()">Proceed to Offer Creation →</button>
+          <div id="hr-final-action-note" class="banner notice" style="display:none"></div>
         </div>
-        <div class="hint" style="margin-top:12px">ADVANCED passes the final stage but does not select or fill a position. Final selection creates SELECTED and reserves capacity; HR then records the external offer outcome and ONBOARDING_PENDING. Only onboarding completion creates POSITION_FILLED.</div>
+        <div class="hint" style="margin-top:12px">Clearing the HR round enables offer creation but does not select or fill a position. Only an accepted offer creates an onboarding case; only completed onboarding creates a permanent employee record.</div>
         <button class="btn" style="margin-top:12px" onclick="go('hr-closure')">Review headcount &amp; closure →</button>
       </div>
 
@@ -2153,6 +2197,75 @@ HR review guidance
             <div class="banner warn">The Hiring Manager must execute or reject this request with an audited reason. A closed opening stays visible, read-only, undeletable, and retained under policy.</div>
           </div>
         </div>
+      </div>
+
+      <div id="hr-offer" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div><h1>Offer management</h1><p class="sub">Create, review, send, and track a candidate-specific offer. Delivery, document generation, and responses are simulated in this browser mockup.</p></div>
+          <span class="state draft" id="offer-status-pill">DRAFT</span>
+        </div>
+        <div class="banner notice">Candidate: <b id="offer-candidate-summary">C-07 · Rey Anand</b>. The offer document is generated from this offer record and the approved requisition — it does not alter the requisition itself.</div>
+        <div class="grid2" style="margin-top:14px">
+          <div class="card">
+            <h2>Offer details</h2>
+            <div class="form-grid">
+              <label class="f">Candidate name<input id="offer-name" oninput="renderOfferLetter()" /></label>
+              <label class="f">Registered email<input id="offer-email" type="email" oninput="renderOfferLetter()" /></label>
+              <label class="f">Designation<input id="offer-designation" oninput="renderOfferLetter()" /></label>
+              <label class="f">Department<input id="offer-department" oninput="renderOfferLetter()" /></label>
+              <label class="f">CTC / annual salary<input id="offer-ctc" oninput="renderOfferLetter()" /></label>
+              <label class="f">Employment type<select id="offer-employment" onchange="renderOfferLetter()"><option>Full-time</option><option>Fixed-term</option><option>Contract</option></select></label>
+              <label class="f">Joining date<input id="offer-joining" type="date" oninput="renderOfferLetter()" /></label>
+              <label class="f">Work location<input id="offer-location" oninput="renderOfferLetter()" /></label>
+              <label class="f">Reporting manager<input id="offer-manager" oninput="renderOfferLetter()" /></label>
+              <label class="f">Offer expiry<input id="offer-expiry" type="date" oninput="renderOfferLetter()" /></label>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" onclick="saveOfferDraft()">Save as Draft</button><button class="btn primary" onclick="prepareOfferSend()">Save &amp; Send Offer</button></div>
+            <div id="offer-action-note" class="banner notice" style="display:none"></div>
+          </div>
+          <div class="card">
+            <h2>Offer response &amp; communication</h2>
+            <div id="offer-status-detail"></div>
+            <div id="offer-response-controls" style="margin-top:12px">
+              <label class="f">Demo candidate response</label>
+              <select id="offer-response"><option value="ACCEPTED">Accepted</option><option value="DECLINED">Declined</option><option value="NEGOTIATION_REQUESTED">Negotiation Requested</option><option value="EXPIRED">Expired</option></select>
+              <label class="f">Candidate message / negotiation note</label><textarea id="offer-response-note" style="min-height:58px">I am pleased to accept the offer and look forward to joining.</textarea>
+              <button class="btn" style="margin-top:10px" onclick="recordOfferResponse()">Record simulated response</button>
+            </div>
+            <div id="offer-onboarding-action" style="margin-top:12px"></div>
+            <h2 style="margin-top:16px">Communication history</h2><div id="offer-communications"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h2>Offer letter preview</h2><span class="hint">Preview updates as you edit; final document is simulated as a PDF attachment.</span></div>
+          <div id="offer-letter-preview" class="offer-letter" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div id="hr-email-preview" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Email preview</h1><p class="sub">Review the simulated message before delivery. No external email is sent by this mockup.</p></div><span class="chip warn">SIMULATED DELIVERY</span></div>
+        <div class="card" style="max-width:820px;margin-top:14px"><div id="email-preview-content"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn" onclick="returnFromEmailPreview()">Back to draft</button><button class="btn primary" onclick="sendPendingCommunication()">Send simulated email</button></div><div id="email-preview-note" class="banner notice" style="display:none"></div></div>
+      </div>
+
+      <div id="hr-onboarding" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Employee onboarding</h1><p class="sub">Offer-accepted employees receive one onboarding case. Cases track HR, IT, account, and employee tasks without creating a duplicate employee record.</p></div><button class="btn" onclick="go('hr-employees')">Employee directory →</button></div>
+        <div id="onboarding-dashboard-content" style="margin-top:14px"></div>
+      </div>
+
+      <div id="hr-onboarding-detail" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Onboarding profile</h1><p class="sub">Coordinate the accepted offer, sessions, secure account activation, and assigned task evidence.</p></div><button class="btn" onclick="go('hr-onboarding')">← Onboarding dashboard</button></div>
+        <div id="onboarding-detail-content" style="margin-top:14px"></div>
+      </div>
+
+      <div id="hr-employees" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Employee directory</h1><p class="sub">Existing employees and employees activated from completed onboarding. This is employee record management only — not payroll, attendance, or leave management.</p></div><span class="chip on" id="employee-directory-count">0 employees</span></div>
+        <div class="card" style="margin-top:14px"><div class="form-grid"><label class="f">Search<input id="employee-search" oninput="renderEmployeeDirectory()" placeholder="Name, employee ID, department, or email" /></label><label class="f">Employment status<select id="employee-filter-status" onchange="renderEmployeeDirectory()"><option value="ALL">All statuses</option><option value="Active">Active</option><option value="Probation">Probation</option></select></label><label class="f">Department<select id="employee-filter-department" onchange="renderEmployeeDirectory()"><option value="ALL">All departments</option><option value="Product Engineering">Product Engineering</option><option value="People Operations">People Operations</option><option value="Customer Success">Customer Success</option></select></label></div></div>
+        <div class="card" style="margin-top:14px;overflow-x:auto"><table class="tbl"><thead><tr><th>Employee</th><th>Department / manager</th><th>Employment</th><th>Joining</th><th>Status</th><th></th></tr></thead><tbody id="employee-directory-rows"></tbody></table></div>
+      </div>
+
+      <div id="hr-employee-detail" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Employee profile</h1><p class="sub">Permanent employment record created from verified onboarding data.</p></div><button class="btn" onclick="go('hr-employees')">← Employee directory</button></div>
+        <div id="employee-detail-content" style="margin-top:14px"></div>
       </div>
 
       <!-- ============ APPLICANT ============ -->
@@ -2801,7 +2914,7 @@ HR review guidance
       'oa-dashboard':'Dashboard','oa-pending':'Pending / to be verified','oa-verify':'Verify user','oa-confirmed':'Confirmed users','oa-user-detail':'User details','oa-jobs':'Job openings','oa-job-detail':'Job opening details','oa-profile':'Profile / change password','oa-settings':'Workspace settings','oa-audit':'Access & audit policy',
       'sa-dashboard':'Dashboard','sa-onboarding':'Organization onboarding','sa-onboarding-status':'Provisioning status','sa-admin-management':'Org Owner management','sa-replace-admin':'Replace Org Owner','sa-audit':'Audit history',
       'hm-list':'Dashboard','hm-req':'New role creation','hm-req-status':'Requisition status','hm-jobs':'My job openings','hm-job':'View job opening','hm-stages':'View stages','hm-candidates':'Candidate pipeline','hm-applicant':'Applicant detail','hm-open':'Create job opening','hm-config':'Assessment configuration','hm-criteria':'Interview readiness instructions','hm-publish':'Publish & version','hm-requests':'Action requests',
-      'hr-list':'Dashboard','hr-req':'Requisition approval','hr-openings':'Approved openings','hr-opening':'Opening details','hr-open':'Opening approval','hr-candidates':'Candidate review queue','hr-prescreen':'Pre-screen decision','hr-grievance':'Grievance review','hr-assess':'Assessment review','hr-ai-failure':'AI processing recovery','hr-access-denied':'Access denied','hr-interview':'Schedule live interview','hr-live-status':'Live interview status','hr-final':'Final decision','hr-closure':'Headcount & closure',
+      'hr-list':'Dashboard','hr-req-list':'Requisitions','hr-req':'Requisition review','hr-openings':'Job openings','hr-opening':'Opening review','hr-open':'Opening approval','hr-candidates':'Candidate review queue','hr-prescreen':'Pre-screen decision','hr-grievance':'Grievance review','hr-assess':'Assessment review','hr-ai-failure':'AI processing recovery','hr-access-denied':'Access denied','hr-interview':'Schedule live interview','hr-live-status':'Live interview status','hr-final':'Final decision','hr-offer':'Offer management','hr-email-preview':'Email preview','hr-onboarding':'Employee onboarding','hr-onboarding-detail':'Onboarding profile','hr-employees':'Employee directory','hr-employee-detail':'Employee profile','hr-closure':'Headcount & closure',
       'ap-list':'Dashboard','ap-jobs':'Job details','ap-interest':'Register interest','ap-intake':'Application form (pre-screening)','ap-apply-confirm':'Application submitted','ap-myapps':'My applications','ap-prescreen-pending':'Pre-screen review','ap-prescreen-rejected':'Pre-screen rejection','ap-status':'Invitation & status','ap-readiness':'Readiness','ap-assess':'Work sample','ap-vintro':'Spoken introduction','ap-vread':'Reading sample','ap-vq1':'Structured questions','ap-interruption':'Interruption / grievance','ap-processing':'Submission status','ap-outcome':'Outcome','ap-live':'Live interview 1','ap-live2':'Live interview 2','ap-hr-interview':'HR interview','ap-final':'Final selection','ap-onboarding':'Onboarding',
       'in-list':'My interviews','in-applicants':'All applicants','in-applicants-fullstack':'All applicants','in-req':'Requisition details','in-req-fullstack':'Requisition details','in-brief':'Applicant brief','in-rubric':'Evaluation form','in-submit':'Submission'
     };
@@ -2809,7 +2922,7 @@ HR review guidance
       'oa-dashboard':'oa','oa-pending':'oa','oa-verify':'oa','oa-confirmed':'oa','oa-user-detail':'oa','oa-jobs':'oa','oa-job-detail':'oa','oa-profile':'oa','oa-settings':'oa','oa-audit':'oa',
       'sa-dashboard':'sa','sa-onboarding':'sa','sa-onboarding-status':'sa','sa-admin-management':'sa','sa-replace-admin':'sa','sa-audit':'sa',
       'hm-list':'hm','hm-req':'hm','hm-req-status':'hm','hm-jobs':'hm','hm-job':'hm','hm-stages':'hm','hm-candidates':'hm','hm-applicant':'hm','hm-open':'hm','hm-config':'hm','hm-criteria':'hm','hm-publish':'hm','hm-requests':'hm',
-      'hr-list':'hr','hr-req':'hr','hr-openings':'hr','hr-opening':'hr','hr-open':'hr','hr-candidates':'hr','hr-prescreen':'hr','hr-grievance':'hr','hr-assess':'hr','hr-ai-failure':'hr','hr-access-denied':'hr','hr-interview':'hr','hr-live-status':'hr','hr-final':'hr','hr-closure':'hr',
+      'hr-list':'hr','hr-req-list':'hr','hr-req':'hr','hr-openings':'hr','hr-opening':'hr','hr-open':'hr','hr-candidates':'hr','hr-prescreen':'hr','hr-grievance':'hr','hr-assess':'hr','hr-ai-failure':'hr','hr-interview':'hr','hr-live-status':'hr','hr-final':'hr','hr-offer':'hr','hr-email-preview':'hr','hr-onboarding':'hr','hr-onboarding-detail':'hr','hr-employees':'hr','hr-employee-detail':'hr','hr-closure':'hr',
       'ap-list':'ap','ap-jobs':'ap','ap-interest':'ap','ap-intake':'ap','ap-apply-confirm':'ap','ap-myapps':'ap','ap-prescreen-pending':'ap','ap-prescreen-rejected':'ap','ap-status':'ap','ap-readiness':'ap','ap-assess':'ap','ap-vintro':'ap','ap-vread':'ap','ap-vq1':'ap','ap-interruption':'ap','ap-processing':'ap','ap-outcome':'ap','ap-live':'ap','ap-live2':'ap','ap-hr-interview':'ap','ap-final':'ap','ap-onboarding':'ap',
       'in-list':'in','in-applicants':'in','in-applicants-fullstack':'in','in-req':'in','in-req-fullstack':'in','in-brief':'in','in-rubric':'in','in-submit':'in'
     };
@@ -3243,10 +3356,21 @@ HR review guidance
       document.querySelectorAll('.nav button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === id));
       document.getElementById('crumb').innerHTML =
         (document.getElementById('top-org').textContent || 'Pente.AI') + ' · <b>' + ROLE_LABEL[currentRole] + ' · ' + (TITLES[id] || '') + '</b>';
-      if (id === 'hr-req') renderHrReq();
+      if (id === 'hr-req') renderHrRequisitionDetail();
+      if (id === 'hr-req-list') renderHrRequisitionList();
+      if (id === 'hr-openings') renderHrOpeningList();
+      if (id === 'hr-opening') renderHrOpeningDetail();
       if (id === 'hr-candidates') renderCandidateQueue();
       if (id === 'hm-req-status') showReqStatus();
       if (id === 'hm-list' || id === 'hr-list') renderReqLists();
+      if (id === 'hr-list') renderHrDashboard();
+      if (id === 'hr-final') renderHrFinalDecision();
+      if (id === 'hr-offer') renderOfferModule();
+      if (id === 'hr-email-preview') renderEmailPreview();
+      if (id === 'hr-onboarding') renderOnboardingDashboard();
+      if (id === 'hr-onboarding-detail') renderOnboardingDetail();
+      if (id === 'hr-employees') renderEmployeeDirectory();
+      if (id === 'hr-employee-detail') renderEmployeeDetail();
       if (id === 'oa-pending') renderOaPending();
       if (id === 'oa-confirmed') renderOaConfirmed();
       if (id === 'oa-verify') renderOaVerify();
@@ -3966,6 +4090,9 @@ HR review guidance
 
     let requisitionStages = [];
     let requisitionStageSequence = 0;
+    let requisitionStagesSaved = false;
+    let requisitionStageSectionSequence = 0;
+    let requisitionStageQuestionSequence = 0;
     function recalcRequisitionWeight() {
       let total = 0;
       document.querySelectorAll('[data-req-weight]').forEach(el => { total += (parseInt(el.value, 10) || 0); });
@@ -3981,8 +4108,27 @@ HR review guidance
       const type = document.getElementById('req-stage-type');
       const custom = document.getElementById('req-custom-stage');
       if (!type || !custom) return;
-      custom.disabled = type.value !== 'Other';
-      if (custom.disabled) custom.value = '';
+      type.disabled = requisitionStagesSaved;
+      custom.disabled = requisitionStagesSaved;
+      const add = document.getElementById('req-add-stage');
+      if (add) add.disabled = requisitionStagesSaved;
+      const save = document.getElementById('req-stage-save');
+      const edit = document.getElementById('req-stage-edit');
+      if (save) { save.disabled = requisitionStagesSaved || !requisitionStages.length; save.style.display = requisitionStagesSaved ? 'none' : ''; }
+      if (edit) edit.style.display = requisitionStagesSaved ? '' : 'none';
+    }
+    function saveRequisitionStages() {
+      if (!requisitionStages.length) return;
+      requisitionStagesSaved = true;
+      const status = document.getElementById('req-stage-save-status');
+      if (status) status.textContent = 'Stages saved. Select Edit stages to make changes.';
+      renderRequisitionStages();
+    }
+    function editRequisitionStages() {
+      requisitionStagesSaved = false;
+      const status = document.getElementById('req-stage-save-status');
+      if (status) status.textContent = 'Editing stages. Save your changes when you are finished.';
+      renderRequisitionStages();
     }
     function createRequisitionStage(name, type, weight = 0) {
       return { id: 'stage-' + (++requisitionStageSequence), name, type: type || name, weight, sections: '', questions: '', timing: '', delivery: 'Online' };
@@ -3999,6 +4145,7 @@ HR review guidance
       const stagesHost = document.getElementById('req-stage-editor');
       const weightsHost = document.getElementById('req-weight-editor');
       if (!stagesHost || !weightsHost) return;
+      toggleCustomStageName();
       stagesHost.innerHTML = ''; weightsHost.innerHTML = '';
       if (!requisitionStages.length) {
         stagesHost.innerHTML = '<p class="hint">No stages configured yet. Add one stage at a time; the same stage type can be used more than once.</p>';
@@ -4009,14 +4156,14 @@ HR review guidance
         const stageRow = document.createElement('div'); stageRow.className = 'req';
         const details = document.createElement('div');
         const label = document.createElement('b'); label.textContent = (index + 1) + '. ';
-        const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.value = stage.name; nameInput.setAttribute('aria-label','Stage name'); nameInput.oninput = () => { stage.name = nameInput.value; renderAssessmentStageList(); renderStageControls(); };
+        const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.value = stage.name; nameInput.disabled = requisitionStagesSaved; nameInput.setAttribute('aria-label','Stage name'); nameInput.oninput = () => { stage.name = nameInput.value; renderAssessmentStageList(); renderStageControls(); };
         const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Type: ' + stage.type + ' · questions, sections, timing, and delivery are set in Stage controls.';
         details.append(label, nameInput, hint);
-        const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove'; remove.onclick = () => { requisitionStages = requisitionStages.filter(item => item.id !== stage.id); renderRequisitionStages(); renderAssessmentStageList(); renderStageControls(); };
+        const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove'; remove.disabled = requisitionStagesSaved; remove.onclick = () => { requisitionStages = requisitionStages.filter(item => item.id !== stage.id); renderRequisitionStages(); renderAssessmentStageList(); renderStageControls(); };
         stageRow.append(details, remove); stagesHost.append(stageRow);
         const weightRow = document.createElement('div'); weightRow.className = 'req';
         const weightLabel = document.createElement('div'); weightLabel.textContent = (index + 1) + '. ' + stage.name;
-        const weight = document.createElement('input'); weight.type = 'number'; weight.min = '0'; weight.max = '100'; weight.value = stage.weight; weight.setAttribute('data-req-weight',''); weight.setAttribute('aria-label',stage.name + ' weightage'); weight.oninput = () => { stage.weight = parseInt(weight.value, 10) || 0; recalcRequisitionWeight(); renderAssessmentStageList(); renderStageControls(); };
+        const weight = document.createElement('input'); weight.type = 'number'; weight.min = '0'; weight.max = '100'; weight.value = stage.weight; weight.disabled = requisitionStagesSaved; weight.setAttribute('data-req-weight',''); weight.setAttribute('aria-label',stage.name + ' weightage'); weight.oninput = () => { stage.weight = parseInt(weight.value, 10) || 0; recalcRequisitionWeight(); renderAssessmentStageList(); renderStageControls(); };
         const suffix = document.createElement('span'); suffix.textContent = '%'; weightRow.append(weightLabel, weight, suffix); weightsHost.append(weightRow);
       });
       recalcRequisitionWeight();
@@ -4025,18 +4172,48 @@ HR review guidance
       const type = document.getElementById('req-stage-type');
       const custom = document.getElementById('req-custom-stage');
       if (!type || !custom) return;
-      const name = type.value === 'Other' ? custom.value.trim() : type.value;
-      if (!name) { custom.focus(); return; }
+      const name = custom.value.trim() || type.value;
+      if (type.value === 'Other' && !custom.value.trim()) { custom.focus(); return; }
       requisitionStages.push(createRequisitionStage(name, type.value));
       custom.value = ''; toggleCustomStageName(); renderRequisitionStages(); renderAssessmentStageList(); renderStageControls();
     }
+    let openingSourceRequisition = null;
     function loadApprovedRequisitionStages() {
       if (!requisitionStages.length) {
         requisitionStages = [createRequisitionStage('Pre-screening','Pre-screening',20), createRequisitionStage('Online assessment','Online assessment',25), createRequisitionStage('Live interview','Live interview',40), createRequisitionStage('HR interview','HR interview',15)];
       }
       renderRequisitionStages(); renderAssessmentStageList(); renderStageControls();
     }
-    function openApprovedRequisition() { loadApprovedRequisitionStages(); go('hm-open'); }
+    function openApprovedRequisition() { createJobOpeningFromApprovedRequisition('REQ-1837'); }
+    function createJobOpeningFromApprovedRequisition(id) {
+      const requisitionId = id || selectedSampleRequisitionId;
+      const record = sampleRequisitionRecords?.[requisitionId];
+      if (!record || record.status !== 'REQUISITION_APPROVED') return;
+      openingSourceRequisition = { id:requisitionId, ...record };
+      requisitionStagesSaved = false;
+      requisitionStages = (record.stages || [
+        { name:'Pre-screening', type:'Pre-screening', weight:20 },
+        { name:'Online assessment', type:'Online assessment', weight:25 },
+        { name:'Live interview', type:'Live interview', weight:40 },
+        { name:'HR interview', type:'HR interview', weight:15 }
+      ]).map(stage => createRequisitionStage(stage.name, stage.type, stage.weight));
+      go('hm-open');
+      const title = document.getElementById('opening-form-title');
+      const subtitle = document.getElementById('opening-form-subtitle');
+      const source = document.getElementById('opening-source-banner');
+      const openingTitle = document.getElementById('opening-title');
+      const requisition = document.getElementById('opening-requisition');
+      const location = document.getElementById('opening-location');
+      const positions = document.getElementById('opening-positions');
+      if (title) title.textContent = 'Create a job opening · ' + record.role;
+      if (subtitle) subtitle.textContent = 'Autofilled from ' + requisitionId + ' · approved ' + record.version + '. Add the application window, visibility, channels, FairPack, and interviewer panel for HR approval.';
+      if (source) { source.style.display = ''; source.textContent = 'Autofilled from approved requisition ' + requisitionId + ': role, position count, location, stage sequence, sections, questions, and weightage. Complete the remaining opening-specific fields below.'; }
+      if (openingTitle) { openingTitle.value = record.role; openingTitle.disabled = true; }
+      if (requisition) requisition.value = requisitionId + ' · approved ' + record.version;
+      if (location) { location.value = record.location || 'Bengaluru · Hybrid (3 days in office)'; location.disabled = true; }
+      if (positions) { positions.value = record.positions; positions.disabled = true; }
+      renderRequisitionStages(); renderAssessmentStageList(); renderStageControls();
+    }
     function renderAssessmentStageList() {
       const host = document.getElementById('assessment-stage-list');
       if (!host) return;
@@ -4044,18 +4221,107 @@ HR review guidance
       if (!requisitionStages.length) { host.innerHTML = '<p class="hint">No stages have been added to this requisition yet.</p>'; return; }
       requisitionStages.forEach((stage, index) => { const row = document.createElement('div'); row.className = 'req'; const detail = document.createElement('div'); const title = document.createElement('b'); title.textContent = (index + 1) + '. ' + stage.name; const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Inherited from requisition · configure sections and questions in Stage controls.'; detail.append(title, hint); const weight = document.createElement('span'); weight.className = 'state readonly'; weight.textContent = (stage.weight || 0) + '%'; row.append(detail, weight); host.append(row); });
     }
+    function createStageSection(name, questions = []) {
+      return { id:'section-' + (++requisitionStageSectionSequence), name, questions:questions.map(question => ({ id:'question-' + (++requisitionStageQuestionSequence), text:question.text || question, type:question.type || 'Descriptive', options:question.options || '' })) };
+    }
+    function stageSectionDefaults(stage) {
+      const name = ((stage.name || '') + ' ' + (stage.type || '')).toLowerCase();
+      if (name.includes('assessment') || name.includes('aptitude')) return [
+        createStageSection('Self introduction', [{ text:'Introduce yourself and describe the experience most relevant to this role.', type:'Descriptive' }]),
+        createStageSection('Read a passage', [{ text:'Read the supplied passage aloud.', type:'Descriptive' }]),
+        createStageSection('Structured questions', [
+          { text:'Describe a product decision you made using customer evidence.', type:'Descriptive' },
+          { text:'How would you prioritise two competing roadmap requests?', type:'Descriptive' },
+          { text:'Which metric best signals product adoption?', type:'MCQ', options:'Weekly active users | Number of emails sent | Office attendance | Calendar invites' },
+          { text:'Explain how you would respond to an unexpected drop in activation.', type:'Descriptive' }
+        ])
+      ];
+      if (name.includes('pre-screen')) return [createStageSection('Eligibility', [{ text:'Confirm your work authorisation and availability to join.', type:'Descriptive' }])];
+      if (name.includes('live') || name.includes('online interview')) return [createStageSection('Role discussion', [{ text:'Describe a relevant delivery or technical trade-off you made.', type:'Descriptive' }])];
+      if (name.includes('hr')) return [createStageSection('Offer readiness', [{ text:'Discuss joining date, work arrangement, and support needs.', type:'Descriptive' }])];
+      return [createStageSection('New section')];
+    }
+    function syncStageSectionSummary(stage) {
+      const sections = stage.sectionConfigs || [];
+      stage.sections = sections.map(section => section.name).filter(Boolean).join(' · ');
+      stage.questions = sections.flatMap(section => section.questions || []).map(question => question.text).filter(Boolean).join(' · ');
+    }
+    function ensureStageSections(stage) {
+      if (!Array.isArray(stage.sectionConfigs)) stage.sectionConfigs = stageSectionDefaults(stage);
+      stage.sectionConfigs.forEach(section => {
+        section.id ||= 'section-' + (++requisitionStageSectionSequence);
+        if (!Array.isArray(section.questions)) section.questions = [];
+        section.questions.forEach(question => { question.id ||= 'question-' + (++requisitionStageQuestionSequence); question.type ||= 'Descriptive'; question.options ||= ''; });
+      });
+      syncStageSectionSummary(stage);
+      return stage.sectionConfigs;
+    }
+    function addStageSection(stageId) {
+      const stage = requisitionStages.find(item => item.id === stageId);
+      if (!stage) return;
+      const section = createStageSection('New section');
+      ensureStageSections(stage).push(section); syncStageSectionSummary(stage); renderStageControls();
+      requestAnimationFrame(() => document.getElementById('stage-section-name-' + section.id)?.focus());
+    }
+    function removeStageSection(stageId, sectionId) {
+      const stage = requisitionStages.find(item => item.id === stageId);
+      if (!stage) return;
+      stage.sectionConfigs = ensureStageSections(stage).filter(section => section.id !== sectionId); syncStageSectionSummary(stage); renderStageControls();
+    }
+    function addStageQuestion(stageId, sectionId) {
+      const stage = requisitionStages.find(item => item.id === stageId);
+      const section = stage && ensureStageSections(stage).find(item => item.id === sectionId);
+      if (!section) return;
+      const question = { id:'question-' + (++requisitionStageQuestionSequence), text:'', type:'Descriptive', options:'' };
+      section.questions.push(question); syncStageSectionSummary(stage); renderStageControls();
+      requestAnimationFrame(() => document.getElementById('stage-question-text-' + question.id)?.focus());
+    }
+    function removeStageQuestion(stageId, sectionId, questionId) {
+      const stage = requisitionStages.find(item => item.id === stageId);
+      const section = stage && ensureStageSections(stage).find(item => item.id === sectionId);
+      if (!section) return;
+      section.questions = section.questions.filter(question => question.id !== questionId); syncStageSectionSummary(stage); renderStageControls();
+    }
     function renderStageControls() {
       const host = document.getElementById('stage-controls-list');
       if (!host) return;
       host.innerHTML = '';
-      if (!requisitionStages.length) { host.innerHTML = '<p class="hint">No stage controls yet. Add stages on New role creation, then return here to set their questions, timing, delivery, and weightage.</p>'; return; }
+      if (!requisitionStages.length) { host.innerHTML = '<p class="hint">No stage controls yet. Add stages on New role creation, then return here to set their sections, questions, timing, delivery, and weightage.</p>'; return; }
       requisitionStages.forEach((stage, index) => {
-        const defaults = stageDefaults(stage); stage.sections ||= defaults.sections; stage.questions ||= defaults.questions; stage.timing ||= defaults.timing; stage.delivery ||= defaults.delivery;
+        const defaults = stageDefaults(stage); stage.timing ||= defaults.timing; stage.delivery ||= defaults.delivery;
+        const sections = ensureStageSections(stage);
         const card = document.createElement('div'); card.className = 'card'; card.style.marginTop = '14px';
-        card.innerHTML = '<h2></h2><div class="grid2" style="margin-top:10px"><div><label class="f">Stage name</label><input data-field="name" type="text" /><label class="f">Sections</label><input data-field="sections" type="text" /><label class="f">Candidate questions / instructions</label><textarea data-field="questions" style="min-height:94px"></textarea><label class="f">Timing, preparation, and attempts</label><input data-field="timing" type="text" /></div><div><label class="f">Delivery mode</label><select data-field="delivery"><option>Online</option><option>Remote meeting</option><option>In person</option><option>Hybrid</option></select><label class="f">Stage weightage</label><input data-field="weight" type="number" min="0" max="100" /><label class="f">Evaluation and completion rule</label><input data-field="completion" type="text" value="Evidence submitted · HR records advance, hold, or reject" /><label class="f">Accommodation setting</label><select><option>Allow accommodation request · HR reviews privately</option><option>No additional accommodation required</option></select></div></div>';
+        card.innerHTML = '<h2></h2><div class="grid2" style="margin-top:10px"><div><label class="f">Stage name</label><input data-field="name" type="text" /><label class="f">Timing, preparation, and attempts</label><input data-field="timing" type="text" /></div><div><label class="f">Delivery mode</label><select data-field="delivery"><option>Online</option><option>Remote meeting</option><option>In person</option><option>Hybrid</option></select><label class="f">Stage weightage</label><input data-field="weight" type="number" min="0" max="100" /><label class="f">Evaluation and completion rule</label><input data-field="completion" type="text" value="Evidence submitted · HR records advance, hold, or reject" /><label class="f">Accommodation setting</label><select><option>Allow accommodation request · HR reviews privately</option><option>No additional accommodation required</option></select></div></div><div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Sections and questions</b><button class="btn" type="button">Add section</button></div><p class="hint" style="margin-top:6px">Add each assessment section, then add descriptive or multiple-choice questions inside it.</p><div data-stage-sections></div></div>';
         card.querySelector('h2').textContent = 'Stage ' + (index + 1) + ' · ' + stage.name;
-        const set = (field, value) => { const element = card.querySelector('[data-field="' + field + '"]'); element.value = value; element.oninput = () => { stage[field] = element.value; if (field === 'name') { renderRequisitionStages(); renderAssessmentStageList(); card.querySelector('h2').textContent = 'Stage ' + (index + 1) + ' · ' + stage.name; } if (field === 'weight') { stage.weight = parseInt(element.value, 10) || 0; renderRequisitionStages(); renderAssessmentStageList(); } }; };
-        set('name', stage.name); set('sections', stage.sections); set('questions', stage.questions); set('timing', stage.timing); set('delivery', stage.delivery); set('weight', stage.weight);
+        const set = (field, value) => { const element = card.querySelector('[data-field="' + field + '"]'); element.value = value || ''; element.oninput = () => { stage[field] = element.value; if (field === 'name') { renderRequisitionStages(); renderAssessmentStageList(); card.querySelector('h2').textContent = 'Stage ' + (index + 1) + ' · ' + stage.name; } if (field === 'weight') { stage.weight = parseInt(element.value, 10) || 0; renderRequisitionStages(); renderAssessmentStageList(); } }; };
+        set('name', stage.name); set('timing', stage.timing); set('delivery', stage.delivery); set('weight', stage.weight);
+        card.querySelector('button').onclick = () => addStageSection(stage.id);
+        const sectionHost = card.querySelector('[data-stage-sections]');
+        sections.forEach((section, sectionIndex) => {
+          const sectionCard = document.createElement('div'); sectionCard.className = 'test'; sectionCard.style.marginTop = '10px';
+          const heading = document.createElement('div'); heading.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px';
+          const name = document.createElement('input'); name.id = 'stage-section-name-' + section.id; name.type = 'text'; name.value = section.name; name.setAttribute('aria-label','Section name'); name.oninput = () => { section.name = name.value; syncStageSectionSummary(stage); };
+          const remove = document.createElement('button'); remove.className = 'btn'; remove.type = 'button'; remove.textContent = 'Remove section'; remove.onclick = () => removeStageSection(stage.id, section.id);
+          heading.append(name, remove); sectionCard.append(heading);
+          const questions = document.createElement('div'); questions.style.marginTop = '10px';
+          const questionLabel = document.createElement('b'); questionLabel.textContent = 'Questions in section ' + (sectionIndex + 1); questions.append(questionLabel);
+          section.questions.forEach((question, questionIndex) => {
+            const questionCard = document.createElement('div'); questionCard.className = 'req'; questionCard.style.marginTop = '8px';
+            const fields = document.createElement('div');
+            const questionText = document.createElement('textarea'); questionText.id = 'stage-question-text-' + question.id; questionText.style.minHeight = '54px'; questionText.placeholder = 'Enter question ' + (questionIndex + 1); questionText.value = question.text; questionText.setAttribute('aria-label','Question ' + (questionIndex + 1)); questionText.oninput = () => { question.text = questionText.value; syncStageSectionSummary(stage); };
+            const typeLabel = document.createElement('label'); typeLabel.className = 'f'; typeLabel.textContent = 'Question type';
+            const type = document.createElement('select'); type.innerHTML = '<option>Descriptive</option><option>MCQ</option>'; type.value = question.type; typeLabel.append(type);
+            const choicesLabel = document.createElement('label'); choicesLabel.className = 'f'; choicesLabel.textContent = 'MCQ choices'; choicesLabel.style.display = question.type === 'MCQ' ? '' : 'none';
+            const choices = document.createElement('input'); choices.placeholder = 'Separate choices with |'; choices.value = question.options; choices.setAttribute('aria-label','MCQ choices'); choices.oninput = () => { question.options = choices.value; };
+            choicesLabel.append(choices);
+            type.onchange = () => { question.type = type.value; choicesLabel.style.display = type.value === 'MCQ' ? '' : 'none'; };
+            fields.append(questionText, typeLabel, choicesLabel);
+            const removeQuestion = document.createElement('button'); removeQuestion.className = 'btn'; removeQuestion.type = 'button'; removeQuestion.textContent = 'Remove question'; removeQuestion.onclick = () => removeStageQuestion(stage.id, section.id, question.id);
+            questionCard.append(fields, removeQuestion); questions.append(questionCard);
+          });
+          const addQuestion = document.createElement('button'); addQuestion.className = 'btn'; addQuestion.type = 'button'; addQuestion.style.marginTop = '8px'; addQuestion.textContent = 'Add question'; addQuestion.onclick = () => addStageQuestion(stage.id, section.id); questions.append(addQuestion);
+          sectionCard.append(questions); sectionHost.append(sectionCard);
+        });
         host.append(card);
       });
     }
@@ -4086,6 +4352,90 @@ HR review guidance
     }
     function filterSampleRequisitions(status) {
       document.querySelectorAll('[data-req-status]').forEach(row => { row.style.display = status === 'all' || row.dataset.reqStatus === status ? '' : 'none'; });
+    }
+    const sampleRequisitionRecords = {
+      'REQ-1842': { role:'Senior Product Manager', positions:'1', version:'v1', status:'PENDING_APPROVAL', state:'pending', activity:'Submitted to HR · 08 Oct 2026', note:'This requisition is waiting for an HR Reviewer decision. The submitted details are read-only until HR returns it for changes.' },
+      'REQ-1841': { role:'Staff Engineer', positions:'2', version:'v1', status:'DRAFT', state:'draft', activity:'Saved by Hiring Manager · 07 Oct 2026', note:'This requisition is shown in read-only detail mode.' },
+      'REQ-1840': { role:'Data Analyst', positions:'1', version:'v2', status:'PENDING_APPROVAL', state:'pending', activity:'Resubmitted to HR · 06 Oct 2026', note:'This revised requisition is waiting for HR review. The submitted details are read-only.' },
+      'REQ-1839': { role:'Product Designer', positions:'1', version:'v1', status:'RETURNED_FOR_CHANGES', state:'rejected', activity:'HR comment received · 05 Oct 2026', note:'Please expand the business justification with the expected first-90-day outcomes and clarify the ownership split with Design.', hrComment:'HR required changes: expand the business justification with expected first-90-day outcomes and clarify the ownership split with Design.' },
+      'REQ-1838': { role:'QA Engineer', positions:'2', version:'v1', status:'SUSPENDED', state:'suspended', activity:'Headcount paused · 04 Oct 2026', note:'This requisition is paused while its headcount is reviewed. The details are read-only.' },
+      'REQ-1837': { role:'Senior React Developer', positions:'2', version:'v1', status:'REQUISITION_APPROVED', state:'approved', activity:'Approved by HR · 03 Oct 2026', note:'This approved requisition is retained as a read-only record.', location:'Bengaluru · Hybrid (3 days in office)', stages:[{ name:'Pre-screening', type:'Pre-screening', weight:20 }, { name:'Online assessment', type:'Online assessment', weight:25 }, { name:'Live interview', type:'Live interview', weight:40 }, { name:'HR interview', type:'HR interview', weight:15 }] }
+    };
+    let selectedSampleRequisitionId = null;
+    function updateSampleRequisitionRow(id) {
+      const record = sampleRequisitionRecords[id];
+      const row = document.querySelector('[data-sample-requisition-id="' + id + '"]');
+      if (!record || !row) return;
+      row.dataset.reqStatus = ({ RETURNED_FOR_CHANGES:'returned', PENDING_APPROVAL:'pending', REQUISITION_APPROVED:'approved', DRAFT:'draft', SUSPENDED:'suspended' })[record.status] || 'all';
+      row.children[4].innerHTML = '<span class="state ' + record.state + '">' + record.status + '</span>';
+      row.children[5].textContent = record.activity;
+    }
+    function applyRequisitionFormAccess() {
+      const record = selectedSampleRequisitionId && sampleRequisitionRecords[selectedSampleRequisitionId];
+      const readOnly = !!record && record.status !== 'RETURNED_FOR_CHANGES';
+      const form = document.getElementById('hm-req');
+      if (!form) return;
+      form.querySelectorAll('input, select, textarea').forEach(field => { field.disabled = readOnly; });
+      if (readOnly) form.querySelectorAll('button').forEach(button => { if (button.id !== 'req-submit' && button.id !== 'req-save-draft') button.disabled = true; });
+      else {
+        form.querySelectorAll('button').forEach(button => { if (button.id !== 'req-submit' && button.id !== 'req-save-draft') button.disabled = false; });
+        renderRequisitionStages();
+        toggleCustomStageName();
+      }
+      const save = document.getElementById('req-save-draft');
+      const submit = document.getElementById('req-submit');
+      const createOpening = document.getElementById('req-create-opening');
+      if (save) { save.disabled = readOnly; save.textContent = record?.status === 'RETURNED_FOR_CHANGES' ? 'Save changes' : 'Save draft'; }
+      if (submit) { submit.disabled = readOnly; submit.textContent = record?.status === 'RETURNED_FOR_CHANGES' ? 'Resubmit for HR approval →' : 'Submit for HR approval →'; }
+      if (createOpening) { createOpening.style.display = record?.status === 'REQUISITION_APPROVED' ? '' : 'none'; createOpening.disabled = false; }
+    }
+    function renderRequisitionForm() {
+      const record = selectedSampleRequisitionId && sampleRequisitionRecords[selectedSampleRequisitionId];
+      const title = document.getElementById('req-form-title');
+      const subtitle = document.getElementById('req-form-subtitle');
+      const pill = document.getElementById('hm-req-pill');
+      const comment = document.getElementById('req-return-comment');
+      const notice = document.getElementById('req-form-notice');
+      if (title) title.textContent = record ? selectedSampleRequisitionId + ' · ' + record.role : 'New role creation';
+      if (subtitle) subtitle.textContent = record ? record.positions + ' position(s) · ' + record.version + ' · ' + record.activity : 'Raise a hiring need. It becomes a job opening only after an authorised HR Reviewer approves it.';
+      if (pill) { pill.textContent = record?.status || 'REQUISITION_DRAFT'; pill.className = 'state ' + (record?.state || 'draft'); }
+      if (comment) { comment.style.display = record?.status === 'RETURNED_FOR_CHANGES' ? '' : 'none'; comment.textContent = record?.hrComment || ''; }
+      if (notice) {
+        notice.style.display = record && record.status !== 'RETURNED_FOR_CHANGES' ? '' : 'none';
+        notice.className = 'banner notice';
+        notice.textContent = record?.status !== 'RETURNED_FOR_CHANGES' ? record.note : '';
+      }
+      if (record?.status === 'RETURNED_FOR_CHANGES') requisitionStagesSaved = false;
+      const firstInputs = document.querySelectorAll('#hm-req .grid2 .card:first-child input[type="text"]');
+      if (record && firstInputs.length >= 2) { firstInputs[0].value = record.role; firstInputs[1].value = record.positions; }
+      if (!record && firstInputs.length >= 2) { firstInputs[0].value = 'Senior Product Manager'; firstInputs[1].value = '1'; }
+      applyRequisitionFormAccess();
+    }
+    function viewSampleRequisition(id) {
+      if (!sampleRequisitionRecords[id]) return;
+      selectedSampleRequisitionId = id;
+      go('hm-req');
+      renderRequisitionForm();
+      window.scrollTo({ top:0, behavior:'smooth' });
+    }
+    function saveRequisitionDraft() {
+      const notice = document.getElementById('req-form-notice');
+      if (!notice) return;
+      notice.className = 'banner notice'; notice.textContent = selectedSampleRequisitionId ? 'Your changes to ' + selectedSampleRequisitionId + ' were saved. Review the HR-required changes, then resubmit when ready.' : 'Draft saved.'; notice.style.display = 'block';
+    }
+    function submitRequisitionFromDetail() {
+      const record = selectedSampleRequisitionId && sampleRequisitionRecords[selectedSampleRequisitionId];
+      if (!record || record.status !== 'RETURNED_FOR_CHANGES') { submitReq(); return; }
+      record.status = 'PENDING_APPROVAL'; record.state = 'pending'; record.activity = 'Resubmitted to HR · 08 Oct 2026'; record.note = 'This revised requisition is waiting for HR review. The submitted details are read-only.'; record.hrComment = '';
+      updateSampleRequisitionRow(selectedSampleRequisitionId);
+      renderRequisitionForm();
+      const notice = document.getElementById('req-form-notice');
+      if (notice) { notice.className = 'banner notice'; notice.textContent = selectedSampleRequisitionId + ' was resubmitted to HR for approval and is now read-only.'; notice.style.display = 'block'; }
+    }
+    function openStageControls() {
+      go('hm-open');
+      tab('open-tabs','pane-stage');
+      document.getElementById('stage-controls-list')?.scrollIntoView({ behavior:'smooth', block:'start' });
     }
     function publishOpening(button) {
       if (button) { button.textContent = 'Published · ACTIVE'; button.disabled = true; }
@@ -4310,6 +4660,329 @@ HR review guidance
       renderInterviewerContext();
     }
     renderLiveStatus();
+
+    // ---- Offer, onboarding, and employee records (browser-local demonstration state) ----
+    const PEOPLE_OPS_STORAGE_KEY = 'hs_offer_onboarding_employee_v1';
+    let selectedEmployeeId = '';
+    let pendingCommunication = null;
+    function peopleOpsDefaults() {
+      return {
+        candidate: { id:'C-07', name:'Rey Anand', email:'rey.anand@candidate.test', hrDecision:'CLEARED', decisionHistory:[{ at:'17 Nov 2026, 09:45 AM', text:'HR ROUND CLEARED recorded after the completed HR interview.' }] },
+        offer: { id:'OFF-2026-041', status:'DRAFT', candidateId:'C-07', name:'Rey Anand', email:'rey.anand@candidate.test', designation:'Senior React Developer', department:'Product Engineering', ctc:'₹24,00,000 per annum', employment:'Full-time', joining:'2026-12-01', location:'Bengaluru · Hybrid', manager:'Priya Menon, Engineering Manager', expiry:'2026-11-24', history:[{ at:'17 Nov 2026, 10:00 AM', text:'HR round cleared for C-07; candidate-specific offer draft created.' }] },
+        onboarding: null,
+        emails: [],
+        employees: [
+          { id:'EMP-1001', name:'Priya Menon', email:'priya.menon@pente.ai', designation:'Engineering Manager', department:'Product Engineering', manager:'Kavita Rao', employment:'Full-time', joining:'2022-06-13', location:'Bengaluru · Hybrid', status:'Active', documents:[{ name:'Employment agreement', status:'Verified' },{ name:'Identity verification', status:'Verified' }], history:['Employee record migrated 13 Jun 2022.'] },
+          { id:'EMP-1008', name:'Arun Nair', email:'arun.nair@pente.ai', designation:'HR Reviewer', department:'People Operations', manager:'Kavita Rao', employment:'Full-time', joining:'2023-02-06', location:'Bengaluru · Hybrid', status:'Active', documents:[{ name:'Employment agreement', status:'Verified' },{ name:'Policy acknowledgement', status:'Verified' }], history:['Employee record created 06 Feb 2023.'] },
+          { id:'EMP-1013', name:'John Smith', email:'john.smith@pente.ai', designation:'Senior Software Engineer', department:'Product Engineering', manager:'Priya Menon', employment:'Full-time', joining:'2025-09-15', location:'Remote · India', status:'Probation', documents:[{ name:'Employment agreement', status:'Verified' },{ name:'Equipment handover', status:'Verified' }], history:['Employee record created after completed onboarding.'] },
+          { id:'EMP-1016', name:'Asha Thomas', email:'asha.thomas@pente.ai', designation:'Customer Success Partner', department:'Customer Success', manager:'Vivek Iyer', employment:'Full-time', joining:'2024-11-01', location:'Bengaluru · Hybrid', status:'Active', documents:[{ name:'Employment agreement', status:'Verified' },{ name:'Identity verification', status:'Verified' }], history:['Employee record migrated 01 Nov 2024.'] }
+        ]
+      };
+    }
+    function loadPeopleOps() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(PEOPLE_OPS_STORAGE_KEY) || 'null');
+        if (saved && saved.offer && Array.isArray(saved.employees)) {
+          const defaults = peopleOpsDefaults();
+          saved.candidate = { ...defaults.candidate, ...(saved.candidate || {}) };
+          if (saved.onboarding) {
+            saved.onboarding.sessions = { hr:{ date:'2026-11-27T10:00', link:'https://meet.google.com/simulated-orientation', content:'Company introduction, policies, and first-day instructions.' }, it:{ owner:'Rahul Bose · IT Support', date:'2026-11-28T11:00', address:'Pente.AI, 4th Floor, Indiranagar, Bengaluru' }, account:{ email:saved.onboarding.employeeEmail || 'rey.anand@pente.ai', apps:'Google Workspace, HireScope, GitHub, Jira' }, ...(saved.onboarding.sessions || {}) };
+          }
+          return saved;
+        }
+      } catch (e) {}
+      return peopleOpsDefaults();
+    }
+    let peopleOps = loadPeopleOps();
+    function savePeopleOps() { localStorage.setItem(PEOPLE_OPS_STORAGE_KEY, JSON.stringify(peopleOps)); }
+    function nowStamp() { return new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+    function peopleStateClass(status) { return /ACCEPTED|COMPLETED|ACTIVE/.test(status) ? 'approved' : /DECLINED|EXPIRED|BLOCKED/.test(status) ? 'rejected' : /DRAFT|NOT_STARTED/.test(status) ? 'draft' : 'pending'; }
+    function offerStatusText(status) { return ({ DRAFT:'Draft', SENT:'Sent', ACCEPTED:'Accepted', DECLINED:'Declined', NEGOTIATION_REQUESTED:'Negotiation Requested', EXPIRED:'Expired' })[status] || status; }
+    function inputValue(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function formatDate(value) { if (!value) return '—'; const d = new Date(value + 'T12:00:00'); return isNaN(d) ? value : d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }); }
+    function escapePeople(value) { return escapeHtml(String(value || '—')); }
+    function offerFromForm() {
+      const previous = peopleOps.offer;
+      return { ...previous, name:inputValue('offer-name') || previous.name, email:inputValue('offer-email') || previous.email, designation:inputValue('offer-designation') || previous.designation, department:inputValue('offer-department') || previous.department, ctc:inputValue('offer-ctc') || previous.ctc, employment:document.getElementById('offer-employment')?.value || previous.employment, joining:inputValue('offer-joining') || previous.joining, location:inputValue('offer-location') || previous.location, manager:inputValue('offer-manager') || previous.manager, expiry:inputValue('offer-expiry') || previous.expiry };
+    }
+    function setOfferForm(offer) {
+      const values = { 'offer-name':offer.name, 'offer-email':offer.email, 'offer-designation':offer.designation, 'offer-department':offer.department, 'offer-ctc':offer.ctc, 'offer-joining':offer.joining, 'offer-location':offer.location, 'offer-manager':offer.manager, 'offer-expiry':offer.expiry };
+      Object.entries(values).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.value = value || ''; });
+      const employment = document.getElementById('offer-employment'); if (employment) employment.value = offer.employment || 'Full-time';
+    }
+    function offerLetterMarkup(offer) {
+      return '<h2>Employment Offer Letter</h2><p>Date: ' + formatDate(new Date().toISOString().slice(0,10)) + '</p><p>Dear <b>' + escapePeople(offer.name) + '</b>,</p><p>We are pleased to offer you the position of <b>' + escapePeople(offer.designation) + '</b> in the <b>' + escapePeople(offer.department) + '</b> department at Pente.AI. This is a ' + escapePeople(offer.employment) + ' role reporting to <b>' + escapePeople(offer.manager) + '</b>.</p><div class="letter-meta"><div>Annual CTC<br><b>' + escapePeople(offer.ctc) + '</b></div><div>Joining date<br><b>' + formatDate(offer.joining) + '</b></div><div>Work location<br><b>' + escapePeople(offer.location) + '</b></div><div>Offer valid until<br><b>' + formatDate(offer.expiry) + '</b></div></div><p>Please accept this offer by the stated expiry date. On acceptance, we will create your onboarding case and share secure joining instructions.</p><p>Warm regards,<br><b>People Operations · Pente.AI</b></p>';
+    }
+    function renderOfferLetter() {
+      const preview = document.getElementById('offer-letter-preview');
+      if (preview) preview.innerHTML = offerLetterMarkup(offerFromForm());
+    }
+    function offerHistoryMarkup() {
+      return (peopleOps.offer.history || []).slice().reverse().map(item => '<li><b>' + escapePeople(item.at) + '</b> · ' + escapePeople(item.text) + '</li>').join('') || '<li>No offer activity yet.</li>';
+    }
+    function renderOfferModule() {
+      const offer = peopleOps.offer;
+      setOfferForm(offer);
+      const pill = document.getElementById('offer-status-pill'); if (pill) { pill.textContent = offerStatusText(offer.status).toUpperCase(); pill.className = 'state ' + peopleStateClass(offer.status); }
+      const summary = document.getElementById('offer-candidate-summary'); if (summary) summary.textContent = offer.candidateId + ' · ' + offer.name;
+      const status = document.getElementById('offer-status-detail');
+      if (status) status.innerHTML = '<div class="req"><div><b>Offer ' + escapePeople(offer.id) + '</b><div class="hint">' + escapePeople(offerStatusText(offer.status)) + ' · expires ' + formatDate(offer.expiry) + '</div></div><span class="state ' + peopleStateClass(offer.status) + '">' + escapePeople(offer.status) + '</span></div><div class="hint" style="margin-top:8px">' + (offer.status === 'ACCEPTED' ? 'Accepted offer automatically created onboarding case ' + escapePeople(peopleOps.onboarding?.id || '') + '.' : offer.status === 'SENT' ? 'Awaiting candidate response. You can record a simulated response below.' : 'Save a draft without notifying the candidate, then preview the email before simulated delivery.') + '</div>';
+      const responseControls = document.getElementById('offer-response-controls'); if (responseControls) responseControls.style.display = offer.status === 'SENT' || offer.status === 'NEGOTIATION_REQUESTED' ? '' : 'none';
+      const action = document.getElementById('offer-onboarding-action');
+      if (action) action.innerHTML = offer.status === 'ACCEPTED' ? '<div class="banner">Offer accepted. Onboarding case <b>' + escapePeople(peopleOps.onboarding?.id || '') + '</b> was created automatically.</div><button class="btn primary" onclick="go(\'hr-onboarding-detail\')">Open onboarding case →</button>' : '<div class="hint">Onboarding initiation stays unavailable until the candidate accepts the offer.</div>';
+      const communications = document.getElementById('offer-communications'); if (communications) communications.innerHTML = '<ul class="activity-list">' + (peopleOps.emails.filter(email => email.related === 'offer').map(email => '<li><b>' + escapePeople(email.at) + '</b> · ' + escapePeople(email.subject) + '<br><span class="hint">To ' + escapePeople(email.to) + ' · ' + escapePeople(email.status) + '</span></li>').join('') || '<li>No offer email has been sent.</li>') + '</ul>';
+      renderOfferLetter();
+    }
+    function renderHrFinalDecision() {
+      const candidate = peopleOps.candidate;
+      const choice = document.querySelector('input[name="fin"][value="' + candidate.hrDecision + '"]');
+      if (choice) choice.checked = true;
+      const proceed = document.getElementById('proceed-offer-button');
+      if (proceed) {
+        proceed.disabled = candidate.hrDecision !== 'CLEARED';
+        proceed.title = proceed.disabled ? 'Record HR ROUND CLEARED before creating an offer.' : 'Create an offer for this cleared candidate.';
+      }
+    }
+    function recordHrFinalDecision() {
+      const selected = document.querySelector('input[name="fin"]:checked');
+      const decision = selected?.value || 'HOLD';
+      const candidate = peopleOps.candidate;
+      candidate.hrDecision = decision;
+      candidate.decisionHistory.push({ at:nowStamp(), text:'Final HR decision recorded: ' + (decision === 'CLEARED' ? 'HR ROUND CLEARED' : decision) + '.' });
+      if (decision === 'CLEARED') peopleOps.offer.history.push({ at:nowStamp(), text:'HR ROUND CLEARED confirmed; offer creation is now enabled.' });
+      savePeopleOps(); renderHrFinalDecision();
+      const note = document.getElementById('hr-final-action-note');
+      if (note) {
+        note.className = decision === 'CLEARED' ? 'banner notice' : 'banner warn';
+        note.textContent = decision === 'CLEARED' ? 'HR ROUND CLEARED recorded. Candidate-specific offer creation is now available.' : 'Final HR decision recorded as ' + decision + '. Offer creation remains unavailable.';
+        note.style.display = 'block';
+      }
+    }
+    function proceedToOfferCreation() {
+      if (peopleOps.candidate.hrDecision !== 'CLEARED') { renderHrFinalDecision(); return; }
+      peopleOps.offer.history.push({ at:nowStamp(), text:'HR selected C-07 after recorded HR ROUND CLEARED and opened offer creation.' }); savePeopleOps(); go('hr-offer');
+    }
+    function saveOfferDraft() {
+      if (peopleOps.offer.status === 'ACCEPTED') return;
+      peopleOps.offer = { ...offerFromForm(), status:'DRAFT' }; peopleOps.offer.history.push({ at:nowStamp(), text:'Offer draft saved; no candidate notification was created.' }); savePeopleOps();
+      const note = document.getElementById('offer-action-note'); note.textContent = 'Draft saved. No candidate email has been sent.'; note.style.display = 'block'; renderOfferModule();
+    }
+    function prepareOfferSend() {
+      if (peopleOps.offer.status === 'ACCEPTED') return;
+      peopleOps.offer = { ...offerFromForm(), status:'DRAFT' }; savePeopleOps();
+      pendingCommunication = { kind:'offer', origin:'hr-offer', to:peopleOps.offer.email, subject:'Employment offer · ' + peopleOps.offer.designation + ' · Pente.AI', body:'Dear ' + peopleOps.offer.name + ',\n\nWe are pleased to share your employment offer for the position of ' + peopleOps.offer.designation + '. Please review the attached offer letter and respond by ' + formatDate(peopleOps.offer.expiry) + '.\n\nWarm regards,\nPeople Operations · Pente.AI', attachment:'Offer_Letter_' + peopleOps.offer.candidateId + '.pdf (simulated generated document)', related:'offer' }; go('hr-email-preview');
+    }
+    function recordOfferResponse() {
+      const response = document.getElementById('offer-response')?.value;
+      const note = inputValue('offer-response-note');
+      if (peopleOps.offer.status !== 'SENT' && peopleOps.offer.status !== 'NEGOTIATION_REQUESTED') return;
+      peopleOps.offer.status = response; peopleOps.offer.history.push({ at:nowStamp(), text:'Candidate response recorded: ' + offerStatusText(response) + (note ? ' — ' + note : '') + '.' });
+      if (response === 'ACCEPTED') createOnboardingCase(); savePeopleOps(); renderOfferModule();
+    }
+    function onboardingTasks() { return [
+      { id:'HR-01', group:'HR', title:'Schedule online orientation', owner:'HR', due:'2026-11-25', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'HR-02', group:'HR', title:'Complete HR orientation and joining instructions', owner:'HR', due:'2026-12-01', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'IT-01', group:'IT', title:'Schedule equipment collection visit', owner:'IT', due:'2026-11-27', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'IT-02', group:'IT', title:'Allocate laptop and accessories', owner:'IT', due:'2026-12-01', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'ACC-01', group:'Account', title:'Create company work account and app access', owner:'IT', due:'2026-11-28', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'ACC-02', group:'Account', title:'Employee securely activates work account', owner:'Employee', due:'2026-12-01', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'OTH-01', group:'Other', title:'Collect and verify joining documents', owner:'HR', due:'2026-11-26', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'OTH-02', group:'Other', title:'Sign employment agreement', owner:'Employee', due:'2026-11-28', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'OTH-03', group:'Other', title:'Acknowledge company policies', owner:'Employee', due:'2026-12-01', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'OTH-04', group:'Other', title:'Confirm reporting manager and department', owner:'Manager', due:'2026-11-28', status:'NOT_STARTED', mandatory:true, history:[] },
+      { id:'OTH-05', group:'Other', title:'Complete induction', owner:'Employee', due:'2026-12-05', status:'NOT_STARTED', mandatory:true, history:[] }
+    ]; }
+    function createOnboardingCase() {
+      if (peopleOps.onboarding) return peopleOps.onboarding;
+      const offer = peopleOps.offer;
+      peopleOps.onboarding = { id:'ONB-2026-041', status:'IN_PROGRESS', candidateId:offer.candidateId, offerId:offer.id, createdAt:nowStamp(), employeeEmail:'rey.anand@pente.ai', sessions:{ hr:{ date:'2026-11-27T10:00', link:'https://meet.google.com/simulated-orientation', content:'Company introduction, policies, and first-day instructions.' }, it:{ owner:'Rahul Bose · IT Support', date:'2026-11-28T11:00', address:'Pente.AI, 4th Floor, Indiranagar, Bengaluru' }, account:{ email:'rey.anand@pente.ai', apps:'Google Workspace, HireScope, GitHub, Jira' } }, tasks:onboardingTasks(), activity:[{ at:nowStamp(), text:'Onboarding case created automatically after accepted offer.' }] };
+      peopleOps.offer.history.push({ at:nowStamp(), text:'Offer accepted; onboarding case ONB-2026-041 created automatically.' }); return peopleOps.onboarding;
+    }
+    function taskCounts(tasks, group) { const list = group ? tasks.filter(task => task.group === group) : tasks; const done = list.filter(task => task.status === 'COMPLETED' || task.exceptionApproved).length; return { done:done, total:list.length, pct:list.length ? Math.round(done / list.length * 100) : 0 }; }
+    function progressMarkup(label, count) { return '<div><b>' + label + '</b><div class="hint">' + count.done + ' of ' + count.total + ' mandatory tasks complete</div><div class="progress-track"><div class="progress-fill" style="width:' + count.pct + '%"></div></div></div>'; }
+    function renderOnboardingDashboard() {
+      const target = document.getElementById('onboarding-dashboard-content'); if (!target) return;
+      const onboarding = peopleOps.onboarding;
+      if (!onboarding) { target.innerHTML = '<div class="card" style="max-width:760px"><h2>No onboarding case yet</h2><p class="hint">An onboarding case is created automatically only after an offer is accepted. Open Offer Management to send an offer and record the demo candidate response.</p><button class="btn primary" style="margin-top:12px" onclick="go(\'hr-offer\')">Open Offer Management</button></div>'; return; }
+      const overall = taskCounts(onboarding.tasks), hr = taskCounts(onboarding.tasks, 'HR'), it = taskCounts(onboarding.tasks, 'IT');
+      target.innerHTML = '<div class="stats"><div class="stat"><div class="n">' + overall.pct + '%</div><div class="l">Overall progress</div></div><div class="stat"><div class="n">' + hr.pct + '%</div><div class="l">HR progress</div></div><div class="stat"><div class="n">' + it.pct + '%</div><div class="l">IT progress</div></div><div class="stat"><div class="n">' + escapePeople(onboarding.status) + '</div><div class="l">Case status</div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>' + escapePeople(peopleOps.offer.name) + '</h2><div class="hint">' + escapePeople(onboarding.id) + ' · ' + escapePeople(peopleOps.offer.designation) + ' · offer accepted</div></div><button class="btn primary" onclick="go(\'hr-onboarding-detail\')">Open onboarding profile →</button></div><div class="grid2" style="margin-top:16px">' + progressMarkup('Overall', overall) + progressMarkup('HR session', hr) + progressMarkup('IT session', it) + progressMarkup('Account creation', taskCounts(onboarding.tasks, 'Account')) + '</div><div class="banner">Completion is allowed only after every mandatory task is completed or an authorised exception is recorded.</div></div>';
+    }
+    function taskOptions(selected) { return ['NOT_STARTED','IN_PROGRESS','COMPLETED','BLOCKED'].map(status => '<option value="' + status + '"' + (selected === status ? ' selected' : '') + '>' + status.replace('_',' ') + '</option>').join(''); }
+    function renderTaskRows(tasks) { return tasks.map(task => { const latest = task.history?.[task.history.length - 1]; return '<tr><td><b>' + escapePeople(task.title) + '</b><div class="hint">' + (task.mandatory ? 'Mandatory' : 'Optional') + (task.exceptionApproved ? ' · Exception approved' : '') + (task.exceptionReason ? '<br>Exception: ' + escapePeople(task.exceptionReason) : '') + (latest ? '<br>Latest activity: ' + escapePeople(latest.text) : '') + '</div></td><td><span class="task-owner">' + escapePeople(task.owner) + '</span></td><td>' + formatDate(task.due) + '</td><td><select id="onb-status-' + task.id + '">' + taskOptions(task.status) + '</select></td><td><button class="btn" onclick="updateOnboardingTask(\'' + task.id + '\')">Update</button>' + (task.status === 'BLOCKED' && !task.exceptionApproved ? '<button class="link-btn" style="margin-left:8px" onclick="approveTaskException(\'' + task.id + '\')">Approve exception</button>' : '') + '</td></tr>'; }).join(''); }
+    function renderOnboardingDetail() {
+      const target = document.getElementById('onboarding-detail-content'); const onboarding = peopleOps.onboarding;
+      if (!target) return; if (!onboarding) { target.innerHTML = '<div class="card"><p class="hint">No accepted offer has created an onboarding case yet.</p></div>'; return; }
+      const offer = peopleOps.offer, overall = taskCounts(onboarding.tasks), hr = taskCounts(onboarding.tasks,'HR'), it = taskCounts(onboarding.tasks,'IT');
+      const sessions = onboarding.sessions || { hr:{ date:'', link:'', content:'' }, it:{ owner:'', date:'', address:'' }, account:{ email:onboarding.employeeEmail || '', apps:'' } };
+      const activity = onboarding.activity.slice().reverse().map(item => '<li><b>' + escapePeople(item.at) + '</b> · ' + escapePeople(item.text) + '</li>').join('');
+      target.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><h2>' + escapePeople(offer.name) + ' <span class="state ' + peopleStateClass(onboarding.status) + '">' + escapePeople(onboarding.status) + '</span></h2><div class="hint">' + escapePeople(onboarding.id) + ' · ' + escapePeople(offer.designation) + ' · joining ' + formatDate(offer.joining) + '</div></div><button class="btn good" onclick="completeOnboarding()">Mark onboarding completed</button></div><div class="grid2" style="margin-top:16px">' + progressMarkup('Overall', overall) + progressMarkup('HR', hr) + progressMarkup('IT', it) + progressMarkup('Account', taskCounts(onboarding.tasks,'Account')) + '</div><div id="onboarding-completion-note" class="banner notice" style="display:none"></div></div><div class="grid2" style="margin-top:14px"><div class="card"><h2>HR session</h2><label class="f">Orientation date and time<input id="onb-hr-session" type="datetime-local" value="' + escapePeople(sessions.hr.date) + '" /></label><label class="f">Meeting / orientation link<input id="onb-hr-link" value="' + escapePeople(sessions.hr.link) + '" /></label><label class="f">Joining instructions<input id="onb-hr-content" value="' + escapePeople(sessions.hr.content) + '" /></label><button class="btn primary" style="margin-top:10px" onclick="prepareHrSessionEmail()">Schedule &amp; preview invitation</button><div class="hint" style="margin-top:8px">Google Meet scheduling and email delivery are simulated; the session details are saved to this onboarding case.</div></div><div class="card"><h2>IT session</h2><label class="f">Assigned IT owner<select id="onb-it-owner"><option' + (sessions.it.owner === 'Rahul Bose · IT Support' ? ' selected' : '') + '>Rahul Bose · IT Support</option><option' + (sessions.it.owner === 'Meera Shah · IT Operations' ? ' selected' : '') + '>Meera Shah · IT Operations</option></select></label><label class="f">Office visit date and time<input id="onb-it-session" type="datetime-local" value="' + escapePeople(sessions.it.date) + '" /></label><label class="f">Office address<input id="onb-it-address" value="' + escapePeople(sessions.it.address) + '" /></label><button class="btn primary" style="margin-top:10px" onclick="prepareItSessionEmail()">Schedule &amp; preview visit email</button><div class="hint" style="margin-top:8px">The assigned IT owner, appointment, and office address are retained on the onboarding case.</div></div></div><div class="grid2" style="margin-top:14px"><div class="card"><h2>Account creation</h2><label class="f">Company email ID<input id="onb-account-email" type="email" value="' + escapePeople(sessions.account.email) + '" /></label><label class="f">Application access<input id="onb-app-access" value="' + escapePeople(sessions.account.apps) + '" /></label><button class="btn primary" style="margin-top:10px" onclick="prepareActivationEmail()">Provision &amp; preview secure activation</button><div class="banner warn">Password delivery is never simulated in email. The activation link is labelled secure and one-time.</div></div><div class="card"><h2>Task note</h2><label class="f">Task<select id="onb-note-task">' + onboarding.tasks.map(task => '<option value="' + task.id + '">' + escapePeople(task.title) + '</option>').join('') + '</select></label><label class="f">Note<textarea id="onb-note" style="min-height:60px" placeholder="Add an activity note or blocker context"></textarea></label><button class="btn" style="margin-top:10px" onclick="addOnboardingNote()">Add note</button></div></div><div class="card" style="margin-top:14px;overflow-x:auto"><h2>Mandatory task tracking</h2><table class="tbl" style="margin-top:10px"><thead><tr><th>Task</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>' + renderTaskRows(onboarding.tasks) + '</tbody></table></div><div class="card" style="margin-top:14px"><h2>Activity history</h2><ul class="activity-list">' + activity + '</ul></div>';
+    }
+    function findTask(id) { return peopleOps.onboarding?.tasks.find(task => task.id === id); }
+    function logOnboarding(text) { if (!peopleOps.onboarding) return; peopleOps.onboarding.activity.push({ at:nowStamp(), text:text }); }
+    function updateOnboardingTask(id) { const task = findTask(id); const field = document.getElementById('onb-status-' + id); if (!task || !field) return; task.status = field.value; task.history.push({ at:nowStamp(), text:'Status changed to ' + task.status + '.' }); logOnboarding(task.title + ' updated to ' + task.status.replace('_',' ') + '.'); savePeopleOps(); renderOnboardingDetail(); }
+    function approveTaskException(id) { const task = findTask(id); if (!task || task.status !== 'BLOCKED') return; const reason = window.prompt('Document the HR-approved exception for “' + task.title + '”. This reason is retained in activity history.'); if (!reason || !reason.trim()) return; task.exceptionApproved = true; task.exceptionReason = reason.trim(); task.history.push({ at:nowStamp(), text:'Mandatory task exception approved by HR: ' + task.exceptionReason }); logOnboarding('HR approved exception for blocked task: ' + task.title + '. Reason: ' + task.exceptionReason); savePeopleOps(); renderOnboardingDetail(); }
+    function addOnboardingNote() { const id = document.getElementById('onb-note-task')?.value, note = inputValue('onb-note'), task = findTask(id); if (!task || !note) return; task.history.push({ at:nowStamp(), text:note }); logOnboarding('Note on ' + task.title + ': ' + note); savePeopleOps(); renderOnboardingDetail(); }
+    function prepareHrSessionEmail() { const date = inputValue('onb-hr-session'), link = inputValue('onb-hr-link'), content = inputValue('onb-hr-content'); if (!date || !link) return; peopleOps.onboarding.sessions.hr = { date:date, link:link, content:content }; const task = findTask('HR-01'); if (task && task.status === 'NOT_STARTED') task.status = 'IN_PROGRESS'; logOnboarding('HR orientation scheduled for ' + formatDate(date.slice(0,10)) + ' at ' + date.slice(11) + '; invitation awaiting preview approval.'); savePeopleOps(); pendingCommunication = { kind:'hr-session', origin:'hr-onboarding-detail', to:peopleOps.offer.email, subject:'Your online orientation session · Pente.AI', body:'Dear ' + peopleOps.offer.name + ',\n\nYour online HR orientation is scheduled for ' + formatDate(date.slice(0,10)) + ' at ' + date.slice(11) + '.\nJoin: ' + link + '\n\n' + content + '\n\nPeople Operations · Pente.AI', related:'onboarding', taskId:'HR-01' }; go('hr-email-preview'); }
+    function prepareItSessionEmail() { const date = inputValue('onb-it-session'), owner = document.getElementById('onb-it-owner')?.value || 'IT Support', address = inputValue('onb-it-address'); if (!date || !address) return; peopleOps.onboarding.sessions.it = { owner:owner, date:date, address:address }; const task = findTask('IT-01'); if (task && task.status === 'NOT_STARTED') task.status = 'IN_PROGRESS'; logOnboarding('IT equipment visit scheduled for ' + formatDate(date.slice(0,10)) + ' at ' + date.slice(11) + ' with ' + owner + '; email awaiting preview approval.'); savePeopleOps(); pendingCommunication = { kind:'it-session', origin:'hr-onboarding-detail', to:peopleOps.offer.email, subject:'Equipment collection visit · Pente.AI', body:'Dear ' + peopleOps.offer.name + ',\n\nPlease visit ' + address + ' on ' + formatDate(date.slice(0,10)) + ' at ' + date.slice(11) + ' to collect your laptop and accessories.\n\nYour IT contact: ' + owner + '.\n\nIT Operations · Pente.AI', related:'onboarding', taskId:'IT-01' }; go('hr-email-preview'); }
+    function prepareActivationEmail() { const email = inputValue('onb-account-email'), apps = inputValue('onb-app-access'); if (!email) return; peopleOps.onboarding.employeeEmail = email; peopleOps.onboarding.sessions.account = { email:email, apps:apps }; const task = findTask('ACC-01'); if (task && task.status === 'NOT_STARTED') task.status = 'IN_PROGRESS'; logOnboarding('Work account ' + email + ' queued for secure activation; no password will be included in email.'); pendingCommunication = { kind:'activation', origin:'hr-onboarding-detail', to:peopleOps.offer.email, subject:'Activate your Pente.AI work account securely', body:'Dear ' + peopleOps.offer.name + ',\n\nYour work account ' + email + ' is being provisioned with: ' + apps + '.\n\nUse the secure one-time activation link in the identity service to set your password. For security, no password is sent by email.\n\nIT Operations · Pente.AI', related:'onboarding', taskId:'ACC-01' }; savePeopleOps(); go('hr-email-preview'); }
+    function renderEmailPreview() { const box = document.getElementById('email-preview-content'); if (!box) return; if (!pendingCommunication) { box.innerHTML = '<div class="banner warn">There is no email waiting for review.</div>'; return; } const mail = pendingCommunication; box.innerHTML = '<div class="req"><div><b>To</b><div class="hint">' + escapePeople(mail.to) + '</div></div></div><div class="req"><div><b>Subject</b><div class="hint">' + escapePeople(mail.subject) + '</div></div></div>' + (mail.attachment ? '<div class="req"><div><b>Attachment</b><div class="hint">' + escapePeople(mail.attachment) + '</div></div></div>' : '') + '<label class="f">Message</label><textarea id="email-preview-body" style="min-height:220px">' + escapePeople(mail.body) + '</textarea>'; }
+    function returnFromEmailPreview() { go(pendingCommunication?.origin || 'hr-offer'); }
+    function sendPendingCommunication() {
+      if (!pendingCommunication) return; const mail = pendingCommunication; const body = inputValue('email-preview-body') || mail.body; peopleOps.emails.unshift({ at:nowStamp(), to:mail.to, subject:mail.subject, body:body, attachment:mail.attachment || '', related:mail.related, status:'SENT (simulated)' });
+      if (mail.kind === 'offer') { peopleOps.offer.status = 'SENT'; peopleOps.offer.history.push({ at:nowStamp(), text:'Final offer document generated and sent to ' + peopleOps.offer.email + ' as an attached simulated PDF.' }); }
+      else { const task = findTask(mail.taskId); if (task) { task.status = 'COMPLETED'; task.history.push({ at:nowStamp(), text:'Related email sent (simulated).' }); } logOnboarding(mail.kind === 'activation' ? 'Secure account activation email sent; password was not included.' : 'Email sent for ' + (mail.kind === 'hr-session' ? 'HR orientation' : 'IT equipment collection') + '.'); }
+      savePeopleOps(); const note = document.getElementById('email-preview-note'); note.textContent = 'Simulated email delivery recorded. No external email was sent.'; note.style.display = 'block'; const origin = mail.origin; pendingCommunication = null; setTimeout(() => go(origin), 550);
+    }
+    function completeOnboarding() {
+      const onboarding = peopleOps.onboarding; if (!onboarding) return; const incomplete = onboarding.tasks.filter(task => task.mandatory && task.status !== 'COMPLETED' && !task.exceptionApproved); const note = document.getElementById('onboarding-completion-note');
+      if (incomplete.length) { note.className = 'banner warn'; note.textContent = 'Onboarding cannot be completed yet. ' + incomplete.length + ' mandatory task(s) still need completion or an approved exception.'; note.style.display = 'block'; return; }
+      onboarding.status = 'COMPLETED'; logOnboarding('All mandatory tasks completed or exception-approved. Onboarding marked completed.'); const existing = peopleOps.employees.find(employee => employee.sourceOnboarding === onboarding.id);
+      if (!existing) { const next = Math.max(...peopleOps.employees.map(employee => parseInt(employee.id.replace('EMP-',''),10)), 1016) + 1; const offer = peopleOps.offer; const employee = { id:'EMP-' + next, sourceOnboarding:onboarding.id, name:offer.name, email:onboarding.employeeEmail, designation:offer.designation, department:offer.department, manager:offer.manager, employment:offer.employment, joining:offer.joining, location:offer.location, status:'Probation', documents:[{ name:'Joining documents', status:'Verified' },{ name:'Employment agreement', status:'Verified' },{ name:'Policy acknowledgement', status:'Verified' }], history:['Employee record created from completed onboarding ' + onboarding.id + '.'] }; peopleOps.employees.push(employee); selectedEmployeeId = employee.id; logOnboarding('Permanent employee record ' + employee.id + ' created with Probation status.'); }
+      else { selectedEmployeeId = existing.id; }
+      savePeopleOps(); note.className = 'banner'; note.textContent = 'Onboarding completed. Permanent employee record ' + selectedEmployeeId + ' is now active in the Employee Directory.'; note.style.display = 'block';
+    }
+    function renderEmployeeDirectory() {
+      const rows = document.getElementById('employee-directory-rows'); if (!rows) return; const search = (document.getElementById('employee-search')?.value || '').toLowerCase(), status = document.getElementById('employee-filter-status')?.value || 'ALL', dept = document.getElementById('employee-filter-department')?.value || 'ALL';
+      const filtered = peopleOps.employees.filter(employee => (status === 'ALL' || employee.status === status) && (dept === 'ALL' || employee.department === dept) && [employee.id,employee.name,employee.email,employee.department].join(' ').toLowerCase().includes(search));
+      rows.innerHTML = filtered.map(employee => '<tr><td><b>' + escapePeople(employee.name) + '</b><div class="hint mono">' + escapePeople(employee.id) + ' · ' + escapePeople(employee.email) + '</div></td><td>' + escapePeople(employee.department) + '<div class="hint">' + escapePeople(employee.manager) + '</div></td><td>' + escapePeople(employee.designation) + '<div class="hint">' + escapePeople(employee.employment) + '</div></td><td>' + formatDate(employee.joining) + '</td><td><span class="state ' + peopleStateClass(employee.status) + '">' + escapePeople(employee.status).toUpperCase() + '</span></td><td><button class="btn" onclick="openEmployeeProfile(\'' + employee.id + '\')">View</button></td></tr>').join('') || '<tr><td colspan="6" class="hint">No employee records match these filters.</td></tr>';
+      const count = document.getElementById('employee-directory-count'); if (count) count.textContent = peopleOps.employees.length + ' employees';
+    }
+    function openEmployeeProfile(id) { selectedEmployeeId = id; go('hr-employee-detail'); }
+    function currentEmployee() { return peopleOps.employees.find(employee => employee.id === selectedEmployeeId) || peopleOps.employees[0]; }
+    function renderEmployeeDetail() {
+      const box = document.getElementById('employee-detail-content'), employee = currentEmployee(); if (!box || !employee) return;
+      const docs = employee.documents.map((doc, index) => '<div class="req"><div><b>' + escapePeople(doc.name) + '</b><div class="hint">' + escapePeople(doc.status) + '</div></div><button class="btn" onclick="toggleEmployeeDocument(' + index + ')">' + (doc.status === 'Verified' ? 'Mark pending' : 'Verify') + '</button></div>').join('');
+      box.innerHTML = '<div class="grid2"><div class="card"><h2>' + escapePeople(employee.name) + ' <span class="state ' + peopleStateClass(employee.status) + '">' + escapePeople(employee.status).toUpperCase() + '</span></h2><div class="hint mono">' + escapePeople(employee.id) + (employee.sourceOnboarding ? ' · created from ' + escapePeople(employee.sourceOnboarding) : '') + '</div><div class="form-grid" style="margin-top:12px"><label class="f">Name<input id="employee-edit-name" value="' + escapePeople(employee.name) + '" /></label><label class="f">Work email<input id="employee-edit-email" type="email" value="' + escapePeople(employee.email) + '" /></label><label class="f">Designation<input id="employee-edit-designation" value="' + escapePeople(employee.designation) + '" /></label><label class="f">Department<input id="employee-edit-department" value="' + escapePeople(employee.department) + '" /></label><label class="f">Reporting manager<input id="employee-edit-manager" value="' + escapePeople(employee.manager) + '" /></label><label class="f">Employment status<select id="employee-edit-status"><option' + (employee.status === 'Active' ? ' selected' : '') + '>Active</option><option' + (employee.status === 'Probation' ? ' selected' : '') + '>Probation</option></select></label><label class="f">Joining date<input id="employee-edit-joining" type="date" value="' + escapePeople(employee.joining) + '" /></label><label class="f">Work location<input id="employee-edit-location" value="' + escapePeople(employee.location) + '" /></label></div><button class="btn primary" style="margin-top:12px" onclick="saveEmployeeProfile()">Save employee details</button><div id="employee-save-note" class="banner notice" style="display:none"></div></div><div class="card"><h2>Document management</h2>' + docs + '<label class="f">Document name<input id="employee-document-title" placeholder="e.g. PAN verification" /></label><button class="btn" style="margin-top:10px" onclick="addEmployeeDocument()">Add document record</button><h2 style="margin-top:16px">Record history</h2><ul class="activity-list">' + employee.history.slice().reverse().map(item => '<li>' + escapePeople(item) + '</li>').join('') + '</ul></div></div>';
+    }
+    function saveEmployeeProfile() { const employee = currentEmployee(); if (!employee) return; ['name','email','designation','department','manager','joining','location'].forEach(key => { const value = inputValue('employee-edit-' + key); if (value) employee[key] = value; }); employee.status = document.getElementById('employee-edit-status')?.value || employee.status; employee.history.push('Profile updated by HR on ' + nowStamp() + '.'); savePeopleOps(); const note = document.getElementById('employee-save-note'); note.textContent = 'Employee profile saved.'; note.style.display = 'block'; }
+    function toggleEmployeeDocument(index) { const employee = currentEmployee(), doc = employee?.documents[index]; if (!doc) return; doc.status = doc.status === 'Verified' ? 'Pending verification' : 'Verified'; employee.history.push(doc.name + ' marked ' + doc.status + ' on ' + nowStamp() + '.'); savePeopleOps(); renderEmployeeDetail(); }
+    function addEmployeeDocument() { const employee = currentEmployee(), name = inputValue('employee-document-title'); if (!employee || !name) return; employee.documents.push({ name:name, status:'Pending verification' }); employee.history.push(name + ' added to document management on ' + nowStamp() + '.'); savePeopleOps(); renderEmployeeDetail(); }
+
+    // ---- HR requisition and opening review workspace ----
+    const hrWorkspace = {
+      requisitions: [
+        { id:'REQ-1840', title:'Data Analyst', requester:'Priya Menon', positions:1, submitted:'05 Oct 2026 · resubmitted v2', status:'PENDING_APPROVAL' },
+        { id:'REQ-1842', title:'Senior Product Manager', requester:'Priya Menon', positions:1, submitted:'04 Oct 2026 · v1', status:'PENDING_APPROVAL' },
+        { id:'REQ-1839', title:'Product Designer', requester:'Priya Menon', positions:1, submitted:'03 Oct 2026 · v1', status:'RETURNED' },
+        { id:'REQ-1838', title:'QA Engineer', requester:'Rohan Shah', positions:2, submitted:'01 Oct 2026 · v1', status:'APPROVED' },
+        { id:'REQ-1837', title:'Backend Engineer', requester:'Maya Das', positions:1, submitted:'29 Sep 2026 · draft', status:'DRAFT' },
+        { id:'REQ-1836', title:'Content Strategist', requester:'Devika Rao', positions:1, submitted:'22 Sep 2026 · withdrawn', status:'WITHDRAWN' }
+      ],
+      openings: [
+        { id:'OPEN-2214', title:'QA Tester', requisition:'REQ-1838', target:2, filled:0, status:'PENDING_OPENING_APPROVAL' },
+        { id:'OPEN-2211', title:'Senior Product Manager', requisition:'REQ-1842', target:1, filled:0, status:'PUBLISHED' },
+        { id:'OPEN-2205', title:'Backend Engineer', requisition:'REQ-1835', target:2, filled:1, status:'PUBLISHED' },
+        { id:'OPEN-2202', title:'Product Designer', requisition:'REQ-1839', target:1, filled:0, status:'RETURNED' },
+        { id:'OPEN-2198', title:'Content Strategist', requisition:'REQ-1836', target:1, filled:0, status:'DRAFT' },
+        { id:'OPEN-2190', title:'Support Specialist', requisition:'REQ-1826', target:2, filled:1, status:'SUSPENDED' },
+        { id:'OPEN-2182', title:'Technical Writer', requisition:'REQ-1818', target:1, filled:1, status:'CLOSED' }
+      ],
+      selectedRequisitionId:'REQ-1840',
+      selectedOpeningId:'OPEN-2214'
+    };
+    function hrStateClass(status) {
+      if (status === 'DRAFT') return 'draft';
+      if (status.includes('PENDING')) return 'pending';
+      if (status === 'RETURNED') return 'rejected';
+      if (status === 'APPROVED' || status === 'APPROVED_TO_PUBLISH' || status === 'PUBLISHED') return 'approved';
+      if (status === 'SUSPENDED') return 'suspended';
+      return 'archived';
+    }
+    function hrStatusPill(status) { return '<span class="state ' + hrStateClass(status) + '">' + status + '</span>'; }
+    function currentHrRequisition() { return hrWorkspace.requisitions.find(item => item.id === hrWorkspace.selectedRequisitionId) || hrWorkspace.requisitions[0]; }
+    function currentHrOpening() { return hrWorkspace.openings.find(item => item.id === hrWorkspace.selectedOpeningId) || hrWorkspace.openings[0]; }
+    function renderHrDashboard() {
+      const reqRows = document.getElementById('hr-dashboard-req-rows');
+      const openingRows = document.getElementById('hr-dashboard-opening-rows');
+      if (reqRows) reqRows.innerHTML = hrWorkspace.requisitions.slice(0, 2).map(item => '<tr><td class="mono">' + item.id + '</td><td>' + item.title + '</td><td>' + item.requester + '</td><td>' + hrStatusPill(item.status) + '</td><td><button class="btn" onclick="openHrRequisition(\'' + item.id + '\')">View</button></td></tr>').join('');
+      if (openingRows) openingRows.innerHTML = hrWorkspace.openings.slice(0, 2).map(item => '<tr><td class="mono">' + item.id + '</td><td>' + item.title + '</td><td class="mono">' + item.requisition + '</td><td>' + hrStatusPill(item.status) + '</td><td><button class="btn" onclick="openHrOpening(\'' + item.id + '\')">View</button></td></tr>').join('');
+    }
+    function renderHrRequisitionList() {
+      const filter = document.getElementById('hr-req-filter')?.value || 'ALL';
+      const items = hrWorkspace.requisitions.filter(item => filter === 'ALL' || item.status === filter);
+      const rows = document.getElementById('hr-req-list-rows');
+      if (rows) rows.innerHTML = items.map(item => '<tr><td class="mono">' + item.id + '</td><td><b>' + item.title + '</b></td><td>' + item.requester + '</td><td>' + item.positions + '</td><td>' + item.submitted + '</td><td>' + hrStatusPill(item.status) + '</td><td><button class="btn" onclick="openHrRequisition(\'' + item.id + '\')">View</button></td></tr>').join('') || '<tr><td colspan="7" class="hint">No requisitions match this status.</td></tr>';
+      const count = document.getElementById('hr-req-list-count');
+      if (count) count.textContent = items.length + ' requisition' + (items.length === 1 ? '' : 's');
+    }
+    function openHrRequisition(id) { hrWorkspace.selectedRequisitionId = id; go('hr-req'); }
+    function renderHrRequisitionDetail() {
+      const item = currentHrRequisition();
+      const queue = document.getElementById('hr-req-detail-queue');
+      const id = document.getElementById('hr-req-detail-id');
+      if (id) id.textContent = item.id;
+      if (queue) {
+        const title = queue.querySelector('b'), hint = queue.querySelector('.hint'), pill = queue.querySelector('.state');
+        if (title) title.textContent = item.title + ' · ' + item.positions + ' headcount';
+        if (hint) hint.textContent = 'Submitted by ' + item.requester + ' · ' + item.submitted;
+        if (pill) { pill.className = 'state ' + hrStateClass(item.status); pill.textContent = item.status; }
+      }
+      const select = document.getElementById('hr-req-status-select');
+      if (select) select.value = item.status;
+      const comment = document.getElementById('hr-req-comment');
+      if (comment) comment.value = item.reviewComment || '';
+      const result = document.getElementById('hr-req-result');
+      if (result) result.style.display = 'none';
+      updateHrReqReviewHelp();
+    }
+    function updateHrReqReviewHelp() {
+      const item = currentHrRequisition(), selected = document.getElementById('hr-req-status-select')?.value || item.status;
+      const pending = item.status === 'PENDING_APPROVAL' || selected === 'PENDING_APPROVAL';
+      const help = document.getElementById('hr-req-review-help'), required = document.getElementById('hr-req-comment-required');
+      if (help) help.textContent = pending ? 'This requisition is awaiting approval. Add a review comment before updating its status.' : 'Record the decision context when updating this requisition.';
+      if (required) required.textContent = pending ? '(required while approval is pending)' : '(optional)';
+    }
+    function saveHrRequisitionStatus() {
+      const item = currentHrRequisition(), next = document.getElementById('hr-req-status-select')?.value || item.status, comment = (document.getElementById('hr-req-comment')?.value || '').trim();
+      const pending = item.status === 'PENDING_APPROVAL' || next === 'PENDING_APPROVAL';
+      const result = document.getElementById('hr-req-result');
+      if (pending && !comment) { if (result) { result.className = 'banner err'; result.textContent = 'Add a review comment before updating a pending approval.'; result.style.display = 'block'; } return; }
+      item.status = next; item.reviewComment = comment;
+      if (result) { result.className = 'banner'; result.textContent = item.id + ' updated to ' + next + (comment ? '. Review comment recorded.' : '.'); result.style.display = 'block'; }
+      renderHrDashboard(); renderHrRequisitionList(); renderHrRequisitionDetail();
+      if (result) result.style.display = 'block';
+    }
+    function renderHrOpeningList() {
+      const filter = document.getElementById('hr-opening-filter')?.value || 'ALL';
+      const items = hrWorkspace.openings.filter(item => filter === 'ALL' || item.status === filter);
+      const rows = document.getElementById('hr-opening-list-rows');
+      if (rows) rows.innerHTML = items.map(item => '<tr><td class="mono">' + item.id + '</td><td><b>' + item.title + '</b></td><td class="mono">' + item.requisition + '</td><td>' + item.target + '</td><td>' + item.filled + '</td><td>' + (item.target - item.filled) + '</td><td>' + hrStatusPill(item.status) + '</td><td><button class="btn" onclick="openHrOpening(\'' + item.id + '\')">View</button></td></tr>').join('') || '<tr><td colspan="8" class="hint">No job openings match this status.</td></tr>';
+      const count = document.getElementById('hr-opening-list-count');
+      if (count) count.textContent = items.length + ' opening' + (items.length === 1 ? '' : 's');
+    }
+    function openHrOpening(id) { hrWorkspace.selectedOpeningId = id; go('hr-opening'); }
+    function renderHrOpeningDetail() {
+      const item = currentHrOpening();
+      const heading = document.querySelector('#hr-opening h1'), subtitle = document.querySelector('#hr-opening > div:not(#hr-opening-review-card) .sub');
+      if (heading) heading.textContent = 'Opening review';
+      if (subtitle) subtitle.textContent = item.id + ' · ' + item.title + ' · created from ' + item.requisition + '.';
+      const select = document.getElementById('hr-opening-status-select');
+      if (select) select.value = item.status;
+      const comment = document.getElementById('hr-opening-comment');
+      if (comment) comment.value = item.reviewComment || '';
+      const pill = document.getElementById('hr-opening-review-pill');
+      if (pill) { pill.className = 'state ' + hrStateClass(item.status); pill.textContent = item.status; }
+      const result = document.getElementById('hr-opening-result');
+      if (result) result.style.display = 'none';
+      updateHrOpeningReviewHelp();
+    }
+    function updateHrOpeningReviewHelp() {
+      const item = currentHrOpening(), selected = document.getElementById('hr-opening-status-select')?.value || item.status;
+      const pending = item.status === 'PENDING_OPENING_APPROVAL' || selected === 'PENDING_OPENING_APPROVAL';
+      const help = document.getElementById('hr-opening-review-help'), required = document.getElementById('hr-opening-comment-required');
+      if (help) help.textContent = pending ? 'This opening is awaiting approval. Add a review comment before updating its status.' : 'Record the decision context when updating this opening.';
+      if (required) required.textContent = pending ? '(required while approval is pending)' : '(optional)';
+    }
+    function saveHrOpeningStatus() {
+      const item = currentHrOpening(), next = document.getElementById('hr-opening-status-select')?.value || item.status, comment = (document.getElementById('hr-opening-comment')?.value || '').trim();
+      const pending = item.status === 'PENDING_OPENING_APPROVAL' || next === 'PENDING_OPENING_APPROVAL';
+      const result = document.getElementById('hr-opening-result');
+      if (pending && !comment) { if (result) { result.className = 'banner err'; result.textContent = 'Add a review comment before updating a pending approval.'; result.style.display = 'block'; } return; }
+      item.status = next; item.reviewComment = comment;
+      if (result) { result.className = 'banner'; result.textContent = item.id + ' updated to ' + next + (comment ? '. Review comment recorded.' : '.'); result.style.display = 'block'; }
+      renderHrDashboard(); renderHrOpeningList(); renderHrOpeningDetail();
+      if (result) result.style.display = 'block';
+    }
 
     // ---- nav wiring & session restore ----
     document.querySelectorAll('.nav button[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
