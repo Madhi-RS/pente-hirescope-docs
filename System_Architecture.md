@@ -6,16 +6,16 @@
 
 ## 1. Authority, identity, and tenancy
 
-HireScope is a multi-tenant recruitment platform. Keycloak is the authentication and credential authority; PostgreSQL is the application/business-data authority. PostgreSQL never stores a Platform Admin password.
+HireScope is a multi-tenant recruitment platform. Keycloak is the authentication and credential authority; PostgreSQL is the application/business-data authority. PostgreSQL never stores a Organization provisioning service password.
 
-There is one pre-provisioned Platform Admin. The account exists in the platform Keycloak realm before deployment is handed over. First login may trigger Keycloak's required password-update action; password recovery and later password changes remain Keycloak flows. Super Admin is a separately auditable, organization-scoped business ownership authority; it can initiate onboarding and Organization Admin replacement only for organizations explicitly linked to that owner. It is not a Platform Admin, tenant operational role, or HR Reviewer replacement authority.
+There is one pre-provisioned Organization provisioning service. The account exists in the platform Keycloak realm before deployment is handed over. First login may trigger Keycloak's required password-update action; password recovery and later password changes remain Keycloak flows. Organization Admin is a separately auditable, organization-scoped business ownership authority; it can initiate onboarding and Organization Owner replacement only for organizations explicitly linked to that owner. It is not a Organization provisioning service, tenant operational role, or HR replacement authority.
 
 ### Keycloak realm decision
 
 ~~~text
 Keycloak
 ├─ master
-│  └─ Platform Admin
+│  └─ Organization provisioning service
 ├─ onboarding
 │  └─ pending registrations / unassigned users
 ├─ pente
@@ -26,21 +26,21 @@ Keycloak
 
 Initial public registration authenticates in the **onboarding** realm. The backend creates the existing `users` row with `is_assigned = false`; there is no separate registration-user table. A user becomes assigned only when an organisation membership exists, at which point `users.is_assigned` is set to `true` in the same business transition.
 
-A verified registrant who selected **I am not registering as an applicant** enters through a known workspace URL and requests `REQUISITION_CREATOR` or HR Reviewer access. There is no public organisation directory. The backend creates/links that identity in the selected tenant realm, creates a `PENDING_VERIFICATION` membership, sets `users.is_assigned = true`, and records the role-verification request. This is not active staff authority: only Organization Admin approval changes the membership to `ACTIVE` and creates the requested organisation-level authority; rejection leaves the membership non-active and preserves the request history.
+A verified registrant who selected **I am not registering as an applicant** enters through a known workspace URL and requests `HIRING_MANAGER` or HR access. There is no public organisation directory. The backend creates/links that identity in the selected tenant realm, creates a `PENDING_VERIFICATION` membership, sets `users.is_assigned = true`, and records the role-verification request. This is not active staff authority: only Organization Owner approval changes the membership to `ACTIVE` and creates the requested organisation-level authority; rejection leaves the membership non-active and preserves the request history.
 
-The onboarding realm is required because a pending registrant has no organisation yet and therefore has no organisation realm to authenticate in. The registrant remains in the onboarding realm until Platform Admin approval creates the organisation realm, then the identity transition links the user into that realm.
+The onboarding realm is required because a pending registrant has no organisation yet and therefore has no organisation realm to authenticate in. The registrant remains in the onboarding realm until Organization provisioning service approval creates the organisation realm, then the identity transition links the user into that realm.
 
 Because Keycloak user IDs are realm-local, approval must use an explicit **identity transition**: create/link the user in the approved organisation realm through the Keycloak Admin API, then transactionally replace the application's external Keycloak reference (including dependent foreign keys) with the organisation-realm identity before creating the membership. The old onboarding identity is disabled or removed only after that transition succeeds. This avoids an application-owned mapping table while preserving the existing `keycloak_user_id` data model.
 
 | Scope | Authority or participant | Representation |
 |---|---|---|
-| Platform | Platform Admin | Pre-provisioned Keycloak identity in `master`; optionally a `users` row for application auditing. No organisation membership or public registration. |
-| Organisation | Organization Admin, HR Reviewer, Requisition Creator | `organization_memberships` + organisation-level authority. `ORGANIZATION_ADMIN`, `HR_REVIEWER`, and `REQUISITION_CREATOR` have `job_opening_id = NULL`. |
-| Job opening | Hiring Manager | A job-opening-specific `HIRING_MANAGER` assignment is created when an authorised requisition creator creates an opening from their own HR-approved requisition. |
+| Platform | Organization provisioning service | Pre-provisioned Keycloak identity in `master`; optionally a `users` row for application auditing. No organisation membership or public registration. |
+| Organisation | Organization Owner, HR, Hiring Manager | `organization_memberships` + organisation-level authority. `ORGANIZATION_ADMIN`, `HR`, and `HIRING_MANAGER` have `job_opening_id = NULL`. |
+| Job opening | Hiring Manager | A job-opening-specific `HIRING_MANAGER` assignment is created when an authorised hiring manager creates an opening from their own HR-approved requisition. |
 | Job opening / Live Interview stage | Interviewer | Pending panel nomination keyed by opening + stage + normalized email; after account activation, `organization_member_roles` for an active membership and opening plus stage-scoped assignments. |
 | Application | Applicant | `job_applications` joins a Keycloak-backed user to a job opening. |
 
-`REQUISITION_CREATOR` is the limited organisation-level authority required before an opening exists; it grants no applicant, interview, or unrelated-opening access. Hiring Manager and Interviewer operational assignments are job-opening-scoped, and an organisation can have many of each. One person may have realm-local identities in multiple organisations, but each authenticated session belongs to one realm only. The backend enforces that every job-specific assignment belongs to the membership's organisation. `ORGANIZATION_ADMIN` and `HR_REVIEWER` remain the one-per-organisation authorities.
+`HIRING_MANAGER` is the limited organisation-level authority required before an opening exists; it grants no applicant, interview, or unrelated-opening access. Hiring Manager and Interviewer operational assignments are job-opening-scoped, and an organisation can have many of each. One person may have realm-local identities in multiple organisations, but each authenticated session belongs to one realm only. The backend enforces that every job-specific assignment belongs to the membership's organisation. `ORGANIZATION_ADMIN` and `HR` remain the one-per-organisation authorities.
 
 ### Multi-tenancy and role architecture
 
@@ -48,21 +48,21 @@ Because Keycloak user IDs are realm-local, approval must use an explicit **ident
 Platform → Organizations → Organization Keycloak realm → Organization members → Organization-scoped data
 ~~~
 
-An Organization Admin authenticating in the `pente` realm is scoped to Pente data only and must never reach `careplus` data. The backend enforces tenant scope on every request; cross-tenant access is denied and audited.
+An Organization Owner authenticating in the `pente` realm is scoped to Pente data only and must never reach `careplus` data. The backend enforces tenant scope on every request; cross-tenant access is denied and audited.
 
 Roles are layered by scope, not flattened into organisation-wide titles:
 
 ~~~text
-Platform Admin     → platform level
-Organization Admin → organisation level (job_opening_id = NULL)
-HR Reviewer        → organisation level (job_opening_id = NULL)
-Requisition Creator→ organisation level (job_opening_id = NULL; requisitions only)
+Organization provisioning service     → platform level
+Organization Owner → organisation level (job_opening_id = NULL)
+HR        → organisation level (job_opening_id = NULL)
+Hiring Manager→ organisation level (job_opening_id = NULL; requisitions only)
 Hiring Manager     → job-opening level
 Interviewer        → job-opening level
 Applicant          → job-application level
 ~~~
 
-Hiring Manager and Interviewer always require a job opening. Requisition creation before an opening uses the separate `REQUISITION_CREATOR` authority. Organization Admin and HR Reviewer are organisation-level (`job_opening_id = NULL`); each organisation has at most one of each.
+Hiring Manager and Interviewer always require a job opening. Requisition creation before an opening uses the separate `HIRING_MANAGER` authority. Organization Owner and HR are organisation-level (`job_opening_id = NULL`); each organisation has at most one of each.
 
 Within one authenticated realm, a user can expose several role contexts—for example Pente → Hiring Manager and Pente → Interviewer. The workspace UI renders these in a same-realm **role switcher**. A role in another organisation is not included in that authenticated switcher: the person logs out, opens the other workspace URL, and authenticates in its realm. The verified email may be the same, but realm-local Keycloak user IDs and passwords may differ; there is no cross-realm SSO.
 
@@ -84,7 +84,7 @@ Landing page
                                            ▼
                                      PostgreSQL
 
-Platform Admin (platform realm)
+Organization provisioning service (platform realm)
   └─ Frontend ─► Core backend
                    ├─ PostgreSQL: onboarding, tenants, memberships, hiring data
                    ├─ Keycloak Admin API: realm and initial-admin provisioning
@@ -95,16 +95,16 @@ Organization user (organisation realm) ─► Keycloak ─► Organisation works
 Applicant ─► Job opening ─► job_applications
 ~~~
 
-The platform frontend and API authorize every request from the validated Keycloak token and application relationships. A Platform Admin token permits platform monitoring/onboarding endpoints only; it does not confer access to organisation recruitment operations.
+The platform frontend and API authorize every request from the validated Keycloak token and application relationships. A Organization provisioning service token permits platform monitoring/onboarding endpoints only; it does not confer access to organisation recruitment operations.
 
-## 3. Platform Admin login and session
+## 3. Organization provisioning service login and session
 
 1. The user selects **Login** on the landing page.
 2. The application redirects to Keycloak.
-3. Keycloak validates the pre-provisioned Platform Admin credentials.
+3. Keycloak validates the pre-provisioned Organization provisioning service credentials.
 4. If required, Keycloak performs the password-update action and returns the authenticated user to the application.
-5. The backend validates token claims/identity and determines the Platform Admin authority.
-6. The Platform Admin dashboard is returned.
+5. The backend validates token claims/identity and determines the Organization provisioning service authority.
+6. The Organization provisioning service dashboard is returned.
 
 Failed authentication remains at the Keycloak/login experience with an appropriate error. Logout terminates the application session, invokes Keycloak logout/end-session, and redirects to Login or the landing page.
 
@@ -116,34 +116,34 @@ Failed authentication remains at the Keycloak/login experience with an appropria
 Requester registration + onboarding-realm identity (users.is_assigned = false)
   └─ submit organisation details, proof and reason
        └─ organization_onboarding_requests = PENDING
-            └─ Platform Admin reviews read-only submission
+            └─ Organization provisioning service reviews read-only submission
                  ├─ Reject
-                 │    └─ REJECTED + rejection reason + email from configured Platform Admin sender
+                 │    └─ REJECTED + rejection reason + email from configured Organization provisioning service sender
                  └─ Approve (backend transaction / compensating workflow)
                       ├─ create organizations record and organisation identifier
                       ├─ Keycloak Admin API creates/configures tenant realm
                       ├─ create/link requester in tenant realm; retire onboarding identity after success
                       ├─ update application Keycloak reference and store organizations.keycloak_realm
-                      ├─ create/link initial Organization Admin identity
+                      ├─ create/link initial Organization Owner identity
                       ├─ create active membership + ORGANIZATION_ADMIN role (no job opening); set is_assigned = true
                       ├─ set request APPROVED + approved_organization_id
                       ├─ activate workspace (status = ACTIVE; may later be set to SUSPENDED)
                       └─ send approval/onboarding email
 ~~~
 
-Realm provisioning is a service operation, not a browser operation. The backend must use idempotency, persist or compensate failures, and only mark the request approved after the business state is coherent. The approval email is sent from the configured Platform Admin email identity; a rejection never requires manual follow-up.
+Realm provisioning is a service operation, not a browser operation. The backend must use idempotency, persist or compensate failures, and only mark the request approved after the business state is coherent. The approval email is sent from the configured Organization provisioning service email identity; a rejection never requires manual follow-up.
 
 ### Organization onboarding table reference
 
 | Column | Purpose/Definition | PK | FK | Data Type | Nullable | Notes |
 |---|---|---|---|---|---|---|
-| `onboarding_request_id` | Immutable identifier for the pre-organisation request. | Yes | No | `uuid` | No | Request/audit reference shown to Platform Admin. |
-| `requester_keycloak_user_id` | Keycloak-backed requester and proposed initial Organization Admin. | No | `users.keycloak_user_id` | `uuid` | No | Name, email, and phone are read from `users`; no credential duplication. |
+| `onboarding_request_id` | Immutable identifier for the pre-organisation request. | Yes | No | `uuid` | No | Request/audit reference shown to Organization provisioning service. |
+| `requester_keycloak_user_id` | Keycloak-backed requester and proposed initial Organization Owner. | No | `users.keycloak_user_id` | `uuid` | No | Name, email, and phone are read from `users`; no credential duplication. |
 | `organization_name` | Submitted legal/operating organisation name. | No | No | `varchar(150)` | No | Becomes the `organizations.organization_name` value if approved. |
 | `document_url` | Location of required organisation/admin proof. | No | No | `text` | No | Object-storage reference; not authentication data. |
-| `comment` | Requester reason/context. | No | No | `text` | No | Visible to Platform Admin during review. |
+| `comment` | Requester reason/context. | No | No | `text` | No | Visible to Organization provisioning service during review. |
 | `request_status` | Lifecycle state. | No | No | `varchar(20)` | No | Allowed values: `PENDING`, `APPROVED`, `REJECTED`. |
-| `reviewed_by_keycloak_user_id` | Platform Admin who recorded the decision. | No | `users.keycloak_user_id` | `uuid` | Yes | Null while pending. |
+| `reviewed_by_keycloak_user_id` | Organization provisioning service who recorded the decision. | No | `users.keycloak_user_id` | `uuid` | Yes | Null while pending. |
 | `reviewed_at` | Decision timestamp. | No | No | `timestamptz` | Yes | Null while pending. |
 | `rejection_reason` | Reason included in rejection notification. | No | No | `text` | Yes | Required for `REJECTED`; null otherwise. |
 | `approved_organization_id` | Eventual created organisation. | No | `organizations.organization_id` | `uuid` | Yes | Null for pending/rejected; unique when set. |
@@ -159,61 +159,61 @@ The existing `users.is_assigned` flag is `false` for onboarding-realm registrati
 `organization_memberships` says that a user belongs to an organisation. It can be created before a role-verification decision. `organization_member_roles` holds scoped authority:
 
 - `ORGANIZATION_ADMIN` has `job_opening_id = NULL`.
-- `HR_REVIEWER`, `ORGANIZATION_ADMIN`, and `REQUISITION_CREATOR` have `job_opening_id = NULL`. `HIRING_MANAGER` and `INTERVIEWER` are job-opening-scoped.
+- `HR`, `ORGANIZATION_ADMIN`, and `HIRING_MANAGER` have `job_opening_id = NULL`. `HIRING_MANAGER` and `INTERVIEWER` are job-opening-scoped.
 - A member may participate in more than one job opening as permitted by the organisation's business rules.
 - A single membership may hold multiple job-specific roles across one or more job openings in addition to an organisation-level role. The workspace UI switches only among contexts in the current realm; changing organisation requires logout and authentication in the other realm.
 
-The approved Hiring Manager first raises a requisition, configuring its job requirements and its stage → section → question hierarchy together with per-stage scoring/weightage (sections 16–18 and 27). Once the HR Reviewer approves the requisition, that same Hiring Manager creates the Job Opening, which carries the approved stage configuration; the service then creates the job-specific Hiring Manager assignment for that opening. Organization Admins only view openings and their aggregate applicant/position information in this phase.
+The approved Hiring Manager first raises a requisition, configuring its job requirements and its stage → section → question hierarchy together with per-stage scoring/weightage (sections 16–18 and 27). Once the HR approves the requisition, that same Hiring Manager creates the Job Opening, which carries the approved stage configuration; the service then creates the job-specific Hiring Manager assignment for that opening. Organization Owners only view openings and their aggregate applicant/position information in this phase.
 
-A public registrant may select **I am not registering as an applicant** from a known organisation workspace and request either `REQUISITION_CREATOR` or HR Reviewer access, then provide proof and a comment. Email verification creates a `PENDING_VERIFICATION` membership and a pending verification request; both authorities have no Job Opening. Interviewer access never originates from public self-selection: the Hiring Manager nominates a name/email on a draft opening and HR approves the opening/panel package. The Organization Admin approves/rejects the submitted organisation-level authority without changing its scope.
+A public registrant may select **I am not registering as an applicant** from a known organisation workspace and request either `HIRING_MANAGER` or HR access, then provide proof and a comment. Email verification creates a `PENDING_VERIFICATION` membership and a pending verification request; both authorities have no Job Opening. Interviewer access never originates from public self-selection: the Hiring Manager nominates a name/email on a draft opening and HR approves the opening/panel package. The Organization Owner approves/rejects the submitted organisation-level authority without changing its scope.
 
 Applicants are associated to a job opening through `job_applications`; organisation scope is derived from that opening. Existing stage, response, advisory-AI, human-decision, and grievance records remain organisation-scoped through the application/opening graph.
 
-## 6. Platform Admin capabilities and boundaries
+## 6. Organization provisioning service capabilities and boundaries
 
-Platform Admin can view onboarded workspaces, pending/approved/rejected onboarding requests, requester proof/comments, workspace membership status, Organization Admin status, job-specific assignment summaries, and role-verification requests. Platform Admin can approve/reject an onboarding request and thereby initiate realm/workspace provisioning, and can activate/suspend a workspace.
+Organization provisioning service can view onboarded workspaces, pending/approved/rejected onboarding requests, requester proof/comments, workspace membership status, Organization Owner status, job-specific assignment summaries, and role-verification requests. Organization provisioning service can approve/reject an onboarding request and thereby initiate realm/workspace provisioning, and can activate/suspend a workspace.
 
-Platform Admin cannot create job openings, manage candidates or interviews, make recruitment decisions, manage recruitment workflows, or assign Organization Admin/job-specific roles in ordinary operation. Workspace screens are monitoring-only and visually/API read-only.
+Organization provisioning service cannot create job openings, manage candidates or interviews, make recruitment decisions, manage recruitment workflows, or assign Organization Owner/job-specific roles in ordinary operation. Workspace screens are monitoring-only and visually/API read-only.
 
-## 7. Organization Admin authentication and onboarding email
+## 7. Organization Owner authentication and onboarding email
 
-After Platform Admin approves the onboarding request, the notification service sends the Organization Admin an onboarding email containing the Login ID, a single-use expiring Keycloak action link, organisation/workspace information, and access instructions. No plaintext/default password is sent or stored by HireScope.
+After Organization provisioning service approves the onboarding request, the notification service sends the Organization Owner an onboarding email containing the Login ID, a single-use expiring Keycloak action link, organisation/workspace information, and access instructions. No plaintext/default password is sent or stored by HireScope.
 
 ~~~text
-Platform Admin approval
+Organization provisioning service approval
   → organisation created
   → organisation Keycloak realm created
-  → Organization Admin associated
+  → Organization Owner associated
   → onboarding email sent
-  → Organization Admin logs in
+  → Organization Owner logs in
 ~~~
 
 First-login flow:
 
-1. The Organization Admin selects **Login** on the landing page.
+1. The Organization Owner selects **Login** on the landing page.
 2. The application redirects to the organisation's Keycloak realm (for example `pente`).
 3. A new realm user follows the single-use action link and establishes a password; an existing realm user authenticates normally.
 4. Keycloak completes any other required first-login actions.
-5. Authentication succeeds and the Organization Admin enters the organisation workspace.
+5. Authentication succeeds and the Organization Owner enters the organisation workspace.
 
-This is distinct from Platform Admin login in `master`. After the workspace exists, the Organization Admin authenticates in the organisation realm, never the onboarding realm.
+This is distinct from Organization provisioning service login in `master`. After the workspace exists, the Organization Owner authenticates in the organisation realm, never the onboarding realm.
 
-## 8. Organization Admin workspace and tenancy
+## 8. Organization Owner workspace and tenancy
 
-After login, the Organization Admin enters the tenant-scoped workspace for their organisation. The workspace shows the organisation name, the Organization Admin identity, organisation context, workspace lifecycle status (ACTIVE/SUSPENDED), and organisation-administration navigation.
+After login, the Organization Owner enters the tenant-scoped workspace for their organisation. The workspace shows the organisation name, the Organization Owner identity, organisation context, workspace lifecycle status (ACTIVE/SUSPENDED), and organisation-administration navigation.
 
-All organisation context is tenant-scoped. The backend derives tenant scope from the authenticated organisation realm and rejects any request whose organisation does not match; an Organization Admin in `pente` sees only Pente data and must never reach `careplus` data.
+All organisation context is tenant-scoped. The backend derives tenant scope from the authenticated organisation realm and rejects any request whose organisation does not match; an Organization Owner in `pente` sees only Pente data and must never reach `careplus` data.
 
 The dashboard provides two member views:
 
 - **Pending / unverified users** — registered users whose organisation/job-specific assignment has not been confirmed, showing user details, requested role, requested job opening (if applicable), supporting document, comment, and verification status.
 - **Confirmed users** — users whose assignment has been verified, showing membership status, assigned role, job opening (if applicable), and assignment date.
 
-Pending users are the pending `role_verification_requests` described in section 5, viewed from the Organization Admin's side.
+Pending users are the pending `role_verification_requests` described in section 5, viewed from the Organization Owner's side.
 
-## 9. Organization Admin user verification and role assignment
+## 9. Organization Owner user verification and role assignment
 
-The Organization Admin is the decision-maker for in-workspace user verification:
+The Organization Owner is the decision-maker for in-workspace user verification:
 
 1. Open the pending user.
 2. Review user details.
@@ -223,34 +223,34 @@ The Organization Admin is the decision-maker for in-workspace user verification:
 6. Decide to approve or reject.
 7. On approval, assign the appropriate role and confirm the user; on rejection, record the rejection reason.
 
-On approval the user moves from the pending/unverified view to the confirmed users view; the confirmed user detail page shows user details, organisation details, workflow-created job assignments, and supporting verification. On rejection the request becomes `REJECTED` (reason required). The notification service sends from the verified organisation address with the responsible Organization Admin as `Reply-To`; individual mailbox credentials are never stored. The rejected request is retained in history.
+On approval the user moves from the pending/unverified view to the confirmed users view; the confirmed user detail page shows user details, organisation details, workflow-created job assignments, and supporting verification. On rejection the request becomes `REJECTED` (reason required). The notification service sends from the verified organisation address with the responsible Organization Owner as `Reply-To`; individual mailbox credentials are never stored. The rejected request is retained in history.
 
-There are two one-per-organisation authorities: **Organization Admin** and **HR Reviewer**. An approved `REQUISITION_CREATOR` has requisition authority without a Job Opening; creating an opening from their approved requisition creates job-specific Hiring Manager scope. An Interviewer always requires an HR-approved opening/stage nomination. The Organization Admin must approve/reject the requested organisation-level authority as submitted, not substitute another scope.
+There are two one-per-organisation authorities: **Organization Owner** and **HR**. An approved `HIRING_MANAGER` has requisition authority without a Job Opening; creating an opening from their approved requisition creates job-specific Hiring Manager scope. An Interviewer always requires an HR-approved opening/stage nomination. The Organization Owner must approve/reject the requested organisation-level authority as submitted, not substitute another scope.
 
 No new table or column is introduced. Pending/confirmed state reuses `users.is_assigned`, `organization_memberships.membership_status`, and `role_verification_requests.verification_status`.
 
 ### Workflow-created job-specific assignments
 
-Organization Admin may approve `REQUISITION_CREATOR` authority and monitor/deactivate assignments, but cannot bypass the recruitment workflow with a manual Add Role action. Creating an opening from the user's own approved requisition creates its `HIRING_MANAGER` assignment. HR approval of the Hiring Manager's stage-specific panel nominations authorises `INTERVIEWER` assignments; new invitees receive the assignment only after Keycloak activation creates/links their membership.
+Organization Owner may approve `HIRING_MANAGER` authority and monitor/deactivate assignments, but cannot bypass the recruitment workflow with a manual Add Role action. Creating an opening from the user's own approved requisition creates its `HIRING_MANAGER` assignment. HR approval of the Hiring Manager's stage-specific panel nominations authorises `INTERVIEWER` assignments; new invitees receive the assignment only after Keycloak activation creates/links their membership.
 
-## 10. Organization Admin job opening and applicant management
+## 10. Organization Owner job opening and applicant management
 
-The Organization Admin monitors the organisation's job openings:
+The Organization Owner monitors the organisation's job openings:
 
 - View job openings.
 - View applicant counts, filled positions, remaining positions, and assigned participants.
-- View assigned Hiring Managers and Interviewers, and the organisation's HR Reviewer.
+- View assigned Hiring Managers and Interviewers, and the organisation's HR.
 - View applicant/application summaries for the organisation's job openings.
 
-Applicants are not organisation members; they are associated to a job opening through `job_applications` and never appear in the confirmed-members list. The Organization Admin sees applicant information through the relevant job opening, not as organisation membership.
+Applicants are not organisation members; they are associated to a job opening through `job_applications` and never appear in the confirmed-members list. The Organization Owner sees applicant information through the relevant job opening, not as organisation membership.
 
-## 11. Organization Admin capabilities and boundaries
+## 11. Organization Owner capabilities and boundaries
 
-The Organization Admin can:
+The Organization Owner can:
 
 - View and manage organisation users.
 - Review pending user requests and supporting documents/comments.
-- Approve organisation-level `REQUISITION_CREATOR`/HR Reviewer access and manage membership status.
+- Approve organisation-level `HIRING_MANAGER`/HR access and manage membership status.
 - Monitor or deactivate workflow-created Hiring Manager and Interviewer assignments; never create them through a manual Add Role bypass.
 - View confirmed users and user details.
 - View job opening assignments.
@@ -259,14 +259,14 @@ The Organization Admin can:
 - Manage organisation-level configuration where already supported.
 - Logout.
 
-The Organization Admin must not:
+The Organization Owner must not:
 
 - Create other organisations or approve organisation onboarding.
 - Create or configure Keycloak realms.
-- Manage the Platform Admin or platform-level resources.
+- Manage the Organization provisioning service or platform-level resources.
 - Access another organisation's data.
 
-Organization Admin authority is organisation-scoped and excludes all platform-level responsibilities.
+Organization Owner authority is organisation-scoped and excludes all platform-level responsibilities.
 
 ## 12. APIs and service boundaries
 
@@ -276,19 +276,19 @@ Organization Admin authority is organisation-scoped and excludes all platform-le
 | Onboarding request | `POST /organization-onboarding-requests`, `GET /...`, `GET /.../{id}` | Creates/list/reads PENDING, APPROVED, REJECTED business records and proof links. |
 | Onboarding decision | `POST /.../{id}/approve`, `POST /.../{id}/reject` | Platform-admin authorization; approval orchestrates organisation/realm/admin creation; rejection records reason and triggers mail. |
 | Workspace monitoring | `GET /organizations`, `GET /organizations/{id}`, `GET /organizations/{id}/users` | Platform-level read models; no recruitment mutation endpoints exposed here. |
-| User monitoring | `GET /organizations/{id}/users/{userId}`, `GET /role-verification-requests` | Returns membership, Organization Admin flag, job assignments, and verification detail. |
-| Role management | Organisation-scoped endpoints only | Organization Admin approves/rejects role requests; approval creates the assignment, rejection records the reason and triggers the decision email. |
-| Keycloak administration | Internal service adapter, not public browser API | Create/configure realm, create/link initial Organization Admin, configure required actions; secrets stay server-side. |
+| User monitoring | `GET /organizations/{id}/users/{userId}`, `GET /role-verification-requests` | Returns membership, Organization Owner flag, job assignments, and verification detail. |
+| Role management | Organisation-scoped endpoints only | Organization Owner approves/rejects role requests; approval creates the assignment, rejection records the reason and triggers the decision email. |
+| Keycloak administration | Internal service adapter, not public browser API | Create/configure realm, create/link initial Organization Owner, configure required actions; secrets stay server-side. |
 
 ## 13. Access-control matrix
 
-| Function | Platform Admin | Organization Admin | Hiring Manager | HR Reviewer | Interviewer | Applicant |
+| Function | Organization provisioning service | Organization Owner | Hiring Manager | HR | Interviewer | Applicant |
 |---|---|---|---|---|---|---|
 | View platform dashboard | Yes | No | No | No | No | No |
 | Manage organisation onboarding | Yes | No | No | No | No | No |
 | Create realm/workspace | Yes / system service | No | No | No | No | No |
 | View workspace users | Read-only, all workspaces | Own org | Limited assignment scope | Own org | Limited assignment scope | Own data |
-| Assign Organization Admin / sole HR Reviewer | Initial provisioning only; read-only appointment monitoring | Cannot replace Super Admin; ordinary role flows only | No | No | No | No |
+| Assign Organization Owner / sole HR | Initial provisioning only; read-only appointment monitoring | Cannot replace Organization Admin; ordinary role flows only | No | No | No | No |
 | Create job-specific assignments | No | Monitor/deactivate | HM assignment by opening creation; nominate panel | Approve panel | No | No |
 | View role verification | Read-only | Own org | No | No | No | Own request |
 | Manage jobs | No | Monitor | Create/publish/manage own opening | Approve/return opening package | No | No |
@@ -313,14 +313,14 @@ Organization Admin authority is organisation-scoped and excludes all platform-le
 | Switch own role context | No | Same realm | Same realm | Same realm | Same realm | Same realm only |
 | Logout | Yes | Yes | Yes | Yes | Yes | Yes |
 
-In the business UI, the person creating a requisition may be called the Hiring Manager. The authorization check for that action is nevertheless `REQUISITION_CREATOR`, not `HIRING_MANAGER`; the latter claim is created only with the user's own opening.
+The Hiring Manager creates a requisition under the organisation-level `HIRING_MANAGER` authority. There is no separate requisition-creator role or claim; the job-opening-specific `HIRING_MANAGER` assignment is created only with that manager's own opening.
 
 ## 14. Data constraints and cardinality
 
 - One organisation has many memberships; each membership has one user and can have many scoped role rows.
-- One organisation has one active Organization Admin and one HR Reviewer under the current rule; enforce each with a partial unique constraint/transactional service rule (both are `job_opening_id = NULL`).
+- One organisation has one active Organization Owner and one HR under the current rule; enforce each with a partial unique constraint/transactional service rule (both are `job_opening_id = NULL`).
 - One job opening has many job-specific participant assignments; a membership may have many job-opening assignments.
-- A role verification request has one requesting membership and optional job opening; its job opening is mandatory only for job-specific role values (`HIRING_MANAGER`, `INTERVIEWER`) and is null for `ORGANIZATION_ADMIN`, `HR_REVIEWER`, and `REQUISITION_CREATOR`.
+- A role verification request has one requesting membership and optional job opening; its job opening is mandatory only for job-specific role values (`HIRING_MANAGER`, `INTERVIEWER`) and is null for `ORGANIZATION_ADMIN`, `HR`, and `HIRING_MANAGER`.
 - An onboarding request has one requester and zero or one eventual organisation. Pending/rejected records have no organisation FK.
 - An organisation has a lifecycle status (`ACTIVE`/`SUSPENDED`); a suspended workspace denies member login at authentication, enforced server-side (the toggle only records the state).
 - A job opening has many applications; each application belongs to one applicant identity and opening.
@@ -328,7 +328,7 @@ In the business UI, the person creating a requisition may be called the Hiring M
 - A job opening is created by the raising Hiring Manager after HR approves its requisition; it retains the requisition reference and carries the approved stage → section → question configuration and per-stage weightage.
 - Capacity uses `available_to_select = target − reserved`, where `reserved` is committed capacity: selected/onboarding reservations plus completed fills. `filled` counts only `ONBOARDING_COMPLETED` records and is displayed separately as the completed-employment metric. Both values are transactionally maintained, non-negative, and auditable; a closed opening is retained read-only.
 - An application's current stage is derived from the opening's configured stage sequence and the applicant's stage history; the sequence is data, never hardcoded.
-- AI evaluation rows are immutable; the HR Reviewer's decision/comment is a separate record and never mutates the AI result.
+- AI evaluation rows are immutable; the HR's decision/comment is a separate record and never mutates the AI result.
 - A canonical person (verified email) may have many realm-local identities; one realm identity maps to at most one canonical person; membership and application are **separate** relationships over the identity.
 - Applying for a job creates a `job_applications` row but **never** an `organization_memberships` row.
 - One applicant may hold at most one active application per job opening (duplicate-application prevention).
@@ -337,27 +337,27 @@ In the business UI, the person creating a requisition may be called the Hiring M
 
 Required cross-row enforcement includes tenant matching for memberships/jobs/requests, `NULLS NOT DISTINCT` duplicate-role prevention where supported, and status transitions. Keycloak identities are referenced with `keycloak_user_id`; credentials and tokens are never persisted in this schema.
 
-## 15. HR Reviewer authentication, workspace, and lifecycle
+## 15. HR authentication, workspace, and lifecycle
 
-An HR Reviewer is not a separate identity or account. The lifecycle is:
+An HR is not a separate identity or account. The lifecycle is:
 
 ~~~text
 Registration (organization workspace)
 → Default Applicant / unverified state
-→ Organization Admin verification (role_verification_requests)
-→ Organization-level HR Reviewer assignment (organization_member_roles, job_opening_id = NULL)
-→ Active HR Reviewer
+→ Organization Owner verification (role_verification_requests)
+→ Organization-level HR assignment (organization_member_roles, job_opening_id = NULL)
+→ Active HR
 ~~~
 
-Authentication is Keycloak-backed and organization-scoped: an HR Reviewer for Pente authenticates through the Pente organization realm, never another organization's realm. PostgreSQL never stores the initial or subsequent password; Keycloak handles first-login password setup/change.
+Authentication is Keycloak-backed and organization-scoped: an HR for Pente authenticates through the Pente organization realm, never another organization's realm. PostgreSQL never stores the initial or subsequent password; Keycloak handles first-login password setup/change.
 
-After authentication the backend resolves the user's organization membership and role assignments to build the HR Reviewer workspace context:
+After authentication the backend resolves the user's organization membership and role assignments to build the HR workspace context:
 
 - User context.
 - Organization context.
 - Active role context (defaulting to the first/primary assignment; switchable via the role switcher).
-- Authorized Job Openings (all openings in the HR Reviewer's organization, by virtue of the organization-level role).
-- Requisitions requiring HR Reviewer action.
+- Authorized Job Openings (all openings in the HR's organization, by virtue of the organization-level role).
+- Requisitions requiring HR action.
 - Applicant evaluations for the authorized openings.
 
 Authorization is derived from organization membership plus job-specific role assignment, enforced per request. Cross-organization access is denied and audited.
@@ -369,17 +369,17 @@ A requisition is an organization-owned, versioned business record that precedes 
 ~~~text
 Hiring Manager → Create Requisition → Configure job requirements
    → Configure stages → sections → questions → stage weightage
-   → Submit → HR Reviewer
-HR Reviewer → Review → Approve
+   → Submit → HR
+HR → Review → Approve
             OR
-HR Reviewer → Return with comment → Hiring Manager edits → Resubmit → HR Review queue
+HR → Return with comment → Hiring Manager edits → Resubmit → HR Review queue
 ~~~
 
 Lifecycle states: `REQUISITION_DRAFT → REQUISITION_PENDING_APPROVAL → REQUISITION_APPROVED`, with `REQUISITION_RETURNED` for returns and `REQUISITION_WITHDRAWN` as its terminal withdrawal state. `ACTIVE → SUSPENDED → CLOSED` belongs to the Job Opening lifecycle, not the requisition. Each submission locks an immutable version; a returned requisition is revised and resubmitted as a new version.
 
 Resubmitted requisitions take priority over newly submitted requisitions in the HR Review queue (previously-reviewed first, then new; within each group, most recent relevant date first).
 
-The requisition carries the job requirements — role/title, position count, business justification, job description, expected experience, salary range, required skills, qualifications/requirements, job responsibilities, eligibility criteria, employment type, and location/work mode — plus the configured recruitment sequence. Delete and suspension are unsupported for requisitions. HR may raise an in-product withdrawal request; only the requisition creator executes or rejects it with an audited reason and notification.
+The requisition carries the job requirements — role/title, position count, business justification, job description, expected experience, salary range, required skills, qualifications/requirements, job responsibilities, eligibility criteria, employment type, and location/work mode — plus the configured recruitment sequence. Delete and suspension are unsupported for requisitions. HR may raise an in-product withdrawal request; only the hiring manager executes or rejects it with an audited reason and notification.
 
 ## 17. Requisition stage → section → question configuration (data model)
 
@@ -408,7 +408,7 @@ Online Assessment
      └── Question 4
 ~~~
 
-The Hiring Manager configures this hierarchy while raising the requisition; the HR Reviewer reviews it before approving. The approved configuration is stored as data and drives the Job Opening's applicant pipeline (section 20).
+The Hiring Manager configures this hierarchy while raising the requisition; the HR reviews it before approving. The approved configuration is stored as data and drives the Job Opening's applicant pipeline (section 20).
 
 For an `Other / Custom Stage`, configuration additionally stores the applicant-facing name/description, mode, conductor rule, evaluator role/count, total marks, passing mark, schedule/submission requirements, completion condition, and notification instructions. A passing mark is advisory decision support only; it never changes application state automatically. Each custom stage instance uses `NOT_STARTED → READY/SCHEDULED → IN_PROGRESS → SUBMITTED/AWAITING_EVALUATIONS → EVALUATION_LOCKED → UNDER_HR_REVIEW → ADVANCED/HOLD/REJECTED`.
 
@@ -435,7 +435,7 @@ DRAFT → PENDING_OPENING_APPROVAL → RETURNED / APPROVED_TO_PUBLISH
 
 HR approves or returns the opening/panel package and approval sends interviewer invitations, but HR never publishes. Only the Hiring Manager who created the opening performs Publish. Suspension, reactivation, and manual closure are likewise executed only by that Hiring Manager against an in-product HR request. Applicants have no manual withdrawal action: missed configured response deadlines cause automatic application suspension; HR may request reactivation for the creating Hiring Manager to execute or reject.
 
-The Job Opening is organization-owned and tenant-scoped. Organization Admins can monitor it but do not create, approve, publish, or configure it.
+The Job Opening is organization-owned and tenant-scoped. Organization Owners can monitor it but do not create, approve, publish, or configure it.
 
 ## 19. Position fulfillment and closure
 
@@ -454,68 +454,68 @@ Available capacity is derived/validated as `available_to_select = target − res
 The applicant pipeline is:
 
 ~~~text
-Applicant → Job Opening → Current Stage → Stage History → Evaluation → HR Reviewer Decision → Next Stage / Rejected
+Applicant → Job Opening → Current Stage → Stage History → Evaluation → HR Decision → Next Stage / Rejected
 ~~~
 
-The current stage and next stage are derived from the Job Opening's configured stage sequence (carried from the requisition), never from a hardcoded universal sequence. Each application records stage history; the HR Reviewer's per-stage decision advances the applicant to the next configured stage or rejects them (rejection makes future stages inaccessible).
+The current stage and next stage are derived from the Job Opening's configured stage sequence (carried from the requisition), never from a hardcoded universal sequence. Each application records stage history; the HR's per-stage decision advances the applicant to the next configured stage or rejects them (rejection makes future stages inaccessible).
 
 ## 21. AI and human evaluation architecture (immutability)
 
 AI evaluation is immutable:
 
 ~~~text
-Applicant submission → AI evaluation service → Persist AI result (immutable) → HR Reviewer reads result → HR Reviewer adds separate human comment → HR Reviewer approves/rejects
+Applicant submission → AI evaluation service → Persist AI result (immutable) → HR reads result → HR adds separate human comment → HR approves/rejects
 ~~~
 
-The HR Reviewer must not modify the original AI evaluation. AI-generated results and the human HR Reviewer decision/comment are stored separately (`ai_stage_evaluations` vs `hr_decisions`) and clearly distinguished in the UI.
+The HR must not modify the original AI evaluation. AI-generated results and the human HR decision/comment are stored separately (`ai_stage_evaluations` vs `hr_decisions`) and clearly distinguished in the UI.
 
 For human-evaluated stages (for example Live Interview, HR Interview):
 
 ~~~text
-Evaluator → Submit Evaluation → Persist Evaluation → HR Reviewer review → HR Reviewer decision
+Evaluator → Submit Evaluation → Persist Evaluation → HR review → HR decision
 ~~~
 
-Live interviews are conducted through the organization's configured external meeting process (for example Google Meet); HireScope does not assume it hosts the meeting. The evaluator submits the interview result to HireScope, and the HR Reviewer reviews it. Multiple evaluators submit independent, attributable results that are not overwritten by one another or by AI.
+Live interviews are conducted through the organization's configured external meeting process (for example Google Meet); HireScope does not assume it hosts the meeting. The evaluator submits the interview result to HireScope, and the HR reviews it. Multiple evaluators submit independent, attributable results that are not overwritten by one another or by AI.
 
 ## 22. Applicant notification architecture
 
 Decisions trigger notifications through the application email service:
 
-- Approve: HR Reviewer → decision → email service → Applicant (job opening, next stage, required action, instructions).
-- Reject: HR Reviewer → decision/comment → email service → Applicant (decision/comment).
+- Approve: HR → decision → email service → Applicant (job opening, next stage, required action, instructions).
+- Reject: HR → decision/comment → email service → Applicant (decision/comment).
 
-Notifications are sent from the verified organisation address with the responsible HR Reviewer as `Reply-To`. Individual mailbox credentials/passwords are never stored. The pre-screening qualification email carries the secure assessment link; a rejected/non-qualified applicant receives no assessment link.
+Notifications are sent from the verified organisation address with the responsible HR as `Reply-To`. Individual mailbox credentials/passwords are never stored. The pre-screening qualification email carries the secure assessment link; a rejected/non-qualified applicant receives no assessment link.
 
 ## 23. Rejected applicant access
 
-A rejected applicant can still log in and view their application status, but cannot access future assessment/interview stages. Once rejected, all future workflow actions (assessment entry, stage completion, progression) are inaccessible for that application. The applicant's view shows only their own application, its status, and the permitted HR Reviewer communication.
+A rejected applicant can still log in and view their application status, but cannot access future assessment/interview stages. Once rejected, all future workflow actions (assessment entry, stage completion, progression) are inaccessible for that application. The applicant's view shows only their own application, its status, and the permitted HR communication.
 
 ## 24. End-to-end data flow
 
 ~~~text
-Requisition Creator → Requisition → HR Reviewer approval
+Hiring Manager → Requisition → HR approval
     → Hiring Manager creates draft opening + panel nominations
     → HR opening/panel approval → Hiring Manager publishes → Applicant
-    → AI / Human Evaluation → HR Reviewer → Applicant notification → Next Stage
+    → AI / Human Evaluation → HR → Applicant notification → Next Stage
     (…configured stages…) → Position fulfillment → Final outcome
 
-Organization Admin → Member → approve organisation-level authority
+Organization Owner → Member → approve organisation-level authority
 Opening creation / HR panel approval → workflow-created job-specific assignments
-    → same-realm HR Reviewer / Interviewer / Hiring Manager role switcher
+    → same-realm HR / Interviewer / Hiring Manager role switcher
 ~~~
 
 ## 25. Architectural decisions and remaining follow-up
 
-The following product decisions are now resolved and override any older one-gate wording above: an approved Hiring Manager has limited requisition authority before a Job Opening exists; HR approval changes the requisition to approved but does not create an opening; the approved Hiring Manager then creates one opening, which carries the stage → section → question configuration and per-stage weightage the manager configured on the requisition. Organization Admins monitor openings and aggregate counts only. Items 1–3 below are retained as historical reconciliation notes and are no longer open decisions.
+The following product decisions are now resolved and override any older one-gate wording above: an approved Hiring Manager has limited requisition authority before a Job Opening exists; HR approval changes the requisition to approved but does not create an opening; the approved Hiring Manager then creates one opening, which carries the stage → section → question configuration and per-stage weightage the manager configured on the requisition. Organization Owners monitor openings and aggregate counts only. Items 1–3 below are retained as historical reconciliation notes and are no longer open decisions.
 
 The following are retained as historical reconciliation notes. Applicant items 7–10 are resolved by section 43 and represented in the DBML:
 
 1. **Resolved — requisition approval → opening approval → publication.** HR approves the requisition; its creator creates the draft opening and nominates the panel; HR approves/returns that package; only the Hiring Manager publishes after `APPROVED_TO_PUBLISH`.
 2. **Resolved — where stages/sections/questions/weights are configured.** The Hiring Manager configures the full stage → section → question hierarchy and per-stage weightage on the requisition (sections 16–18 and 27). The opening carries the approved configuration; the opening refines assessment-delivery and pre-screen criteria without changing the approved sequence once applicants enter it (section 31). The DBML note that marks `requisition_stages`/`requisition_stage_sections` as "legacy/proposed — do not populate" is therefore reversed: requisition-level stage design is now authoritative.
-3. **Resolved — requisition creator scope.** HR Reviewer and `REQUISITION_CREATOR` are organisation-scoped. `HIRING_MANAGER` is job-opening-scoped and is created when the authorised creator creates an opening from their approved requisition.
+3. **Resolved — hiring manager scope.** HR and `HIRING_MANAGER` are organisation-scoped. `HIRING_MANAGER` is job-opening-scoped and is created when the authorised creator creates an opening from their approved requisition.
 4. **"HR Interview" stage.** HR Interview remains a valid configurable stage (the Hiring Manager flow lists it among the predefined stage types); the final HR disposition (`ADVANCED`/`HOLD`/`REJECTED`) after `INTERVIEW_COMPLETED` remains the closing decision. No candidate-performed stage is assumed beyond what the manager configured.
 5. **AI model/evaluation metadata.** The workflow and stories require model/configuration metadata on AI results; the supplied DBML (`ai_stage_evaluations`) omits a model-version column. The agreed evaluation shape is a single headline 0–100 score plus seven per-area 1–4 scores with reasoning (section 28).
-6. **Resolved — notification sender identity.** The service sends from a verified organisation address and sets the responsible HR Reviewer/Organization Admin as `Reply-To`. Individual mailbox credentials are never stored.
+6. **Resolved — notification sender identity.** The service sends from a verified organisation address and sets the responsible HR/Organization Owner as `Reply-To`. Individual mailbox credentials are never stored.
 7. **Resolved — canonical identity / cross-realm linking.** `canonical_people` owns the verified unique email; `users` holds realm-local Keycloak identities linked to that person. The same person may be Applicant in one organisation and staff in another.
 8. **Resolved — multi-stage Live Interview assignment.** `stage_interviewers` provides stage-scoped panel assignment and immutable per-attempt submissions, permitting distinct Live Interview panels and reattempts.
 9. **Resolved — final selection and onboarding.** `application_selections` reserves capacity at selection; `onboarding_records` tracks HR updates from the external onboarding process; `position_fills` is created only at onboarding completion.
@@ -523,13 +523,13 @@ The following are retained as historical reconciliation notes. Applicant items 7
 
 ## 26. Hiring Manager role, workspace switcher, and dashboard
 
-A Hiring Manager is a job-opening-scoped responsibility, not a permanent organisation role. Before an opening exists, the person uses the separate organisation-level `REQUISITION_CREATOR` capability. An organisation can have many requisition creators/Hiring Managers, and one user can hold many assignments inside that realm.
+A Hiring Manager is a job-opening-scoped responsibility, not a permanent organisation role. Before an opening exists, the person uses the separate organisation-level `HIRING_MANAGER` capability. An organisation can have many hiring managers/Hiring Managers, and one user can hold many assignments inside that realm.
 
 After login the backend resolves every context available inside the current realm and renders a **same-realm role switcher**:
 
 ~~~text
 Pente realm
- ├── Requisition Creator / Hiring Manager
+ ├── Hiring Manager
  └── Interviewer
 ~~~
 
@@ -547,7 +547,7 @@ Stage weights **rank and guide prioritisation only**. They are never combined in
 
 The following principles are binding on evaluation design and are carried through the requisition, opening, and applicant-review UIs:
 
-- **Blind review.** Before the AI/evaluator result locks, résumé and "distance traveled" context are hidden from every reviewer. After the AI pre-screen result locks, HR may see them for its decision. Only after that HR decision locks may the assigned Hiring Manager see them read-only. Interviewers, Organization Admin, and Platform Admin do not receive them.
+- **Blind review.** Before the AI/evaluator result locks, résumé and "distance traveled" context are hidden from every reviewer. After the AI pre-screen result locks, HR may see them for its decision. Only after that HR decision locks may the assigned Hiring Manager see them read-only. Interviewers, Organization Owner, and Organization provisioning service do not receive them.
 - **Seven job-task areas.** AI evaluation reports a single headline 0–100 score plus seven per-area 1–4 scores with reasoning: Task, Thinking, Follow-through, Learning, Judgment, People, and Integrity. Areas score evidence of doing the job, not school, years, or employer brand.
 - **"Do not use as a gate."** The requisition/opening records an explicit anti-gate statement (for example FAANG, CS degree, 7+ years, or employment gaps must not be used as gates).
 - **Distance traveled — context only.** Gaps, bootcamps, military or caregiving history, and the absence of brand-name employers are context shown after lock and never scored.
@@ -556,7 +556,7 @@ The following principles are binding on evaluation design and are carried throug
 
 Visibility is enforced in the query/response layer, not by CSS masking:
 
-| Event | HR Reviewer | Hiring Manager | Interviewer | Org/Platform Admin |
+| Event | HR | Hiring Manager | Interviewer | Org/Organization provisioning service |
 |---|---|---|---|---|
 | Submission received; result not locked | Résumé/context hidden | Hidden | Hidden | Hidden |
 | AI pre-screen result immutable/locked | Visible for HR decision | Hidden | Hidden | Hidden |
@@ -575,20 +575,20 @@ Six records are kept distinct and never collapsed into one generic comment field
 
 1. **AI Evaluation** — immutable advisory result (headline score plus seven area scores and reasoning).
 2. **Evaluator Evaluation** — immutable, attributable per-interviewer rubric.
-3. **HR Decision** — the official progression decision, owned by the HR Reviewer (`QUALIFIED_FOR_ASSESSMENT`, `LIVE_INTERVIEW_RECOMMENDED`, `ADVANCED`, `REJECTED`, `HOLD`, etc.).
+3. **HR Decision** — the official progression decision, owned by the HR (`QUALIFIED_FOR_ASSESSMENT`, `LIVE_INTERVIEW_RECOMMENDED`, `ADVANCED`, `REJECTED`, `HOLD`, etc.).
 4. **Confidential HR Note** — exactly one HR-only explanatory/internal note attached to a decision.
 5. **Applicant-visible Status Message** — exactly one status-only message attached to the HR decision and used in the applicant notification; it cannot contain the confidential note.
 6. **Hiring Manager Comment** — the Hiring Manager's observation, read-only for evaluation purposes and never a decision.
 
-A Hiring Manager observation ("strong React skills, suitable for our team") is never mistaken for an official decision ("approved for next stage"), which is owned exclusively by the HR Reviewer.
+A Hiring Manager observation ("strong React skills, suitable for our team") is never mistaken for an official decision ("approved for next stage"), which is owned exclusively by the HR.
 
 ## 31. Stage configuration locking after applicants enter
 
 Once any applicant has entered a stage, that stage's configuration — questions, sections, order, weightage, and evaluation criteria — is locked. Editing it after applicants have been evaluated against it would make historical evaluations inconsistent. The system therefore either locks the stage, or requires a new revision while preserving the configuration actually used when each applicant was evaluated. This applies especially to questions, sections, stage order, scoring/weightage, and evaluation criteria.
 
-## 32. HR Reviewer vs Hiring Manager capability boundary
+## 32. HR vs Hiring Manager capability boundary
 
-| Capability | HR Reviewer | Hiring Manager |
+| Capability | HR | Hiring Manager |
 |---|---|---|
 | Create requisition | No | Yes |
 | Edit own returned requisition | No | Yes |
@@ -646,7 +646,7 @@ The evaluation sections reuse the existing scoring model (criteria, sections, we
 
 ## 35. Live Interview scheduling and status model
 
-Only the HR Reviewer marks an applicant **Eligible for Live Interview** and schedules the event. Scheduling requires: the Live Interview is configured, the required interviewers exist, the applicant is eligible, a valid date/time is provided, and the applicant has not already completed the Live Interview. On confirmation the system records the schedule on the applicant's stage result (`stage_results.scheduled_date`/`scheduled_time`/`status`) and notifies the applicant and every assigned interviewer.
+Only the HR marks an applicant **Eligible for Live Interview** and schedules the event. Scheduling requires: the Live Interview is configured, the required interviewers exist, the applicant is eligible, a valid date/time is provided, and the applicant has not already completed the Live Interview. On confirmation the system records the schedule on the applicant's stage result (`stage_results.scheduled_date`/`scheduled_time`/`status`) and notifies the applicant and every assigned interviewer.
 
 Status models (preserving existing names such as `INTERVIEW_COMPLETED` where already defined):
 
@@ -693,7 +693,7 @@ Every interviewer endpoint resolves `interviewer_id`, `organization_id`, `requis
 
 ## 40. Notifications, audit, and data constraints
 
-Notifications are emitted for HR panel approval/invitation, 24-hour expiry, resend/replacement, applicant eligibility + scheduling, interviewer evaluation submission, all-evaluations-completed, and required-evaluator replacement. They use the verified organisation sender with the responsible HR Reviewer as `Reply-To`; no individual mailbox credential or plaintext password is stored. No interviewer is notified with another interviewer's score.
+Notifications are emitted for HR panel approval/invitation, 24-hour expiry, resend/replacement, applicant eligibility + scheduling, interviewer evaluation submission, all-evaluations-completed, and required-evaluator replacement. They use the verified organisation sender with the responsible HR as `Reply-To`; no individual mailbox credential or plaintext password is stored. No interviewer is notified with another interviewer's score.
 
 The audit framework records: interviewer assigned, interviewer invitation sent, applicant marked eligible, Live Interview scheduled/rescheduled, interviewer opened evaluation, interviewer submitted evaluation, Live Interview completed, missing-evaluator detection, HR-approved evaluator replacement, retake scheduled, and SLA escalation state.
 
@@ -733,13 +733,13 @@ Applying is the Pre-screening stage's intake. The form is generated dynamically 
 
 ### 42.4 Application submission, HR pre-screen queue, and duplicate prevention
 
-Submission creates/updates the application through `INTEREST_REGISTERED → APPLICATION_DETAILS_REQUIRED → RESUME_SUBMITTED`, records a confirmation, and places the application in the HR pre-screen review queue. Duplicate application for the same applicant + opening is rejected server-side. AI pre-screening then runs (advisory, immutable); the HR Reviewer reviews and records `QUALIFIED_FOR_ASSESSMENT` / `PRE_SCREEN_PENDING` / `NOT_CURRENTLY_QUALIFIED`.
+Submission creates/updates the application through `INTEREST_REGISTERED → APPLICATION_DETAILS_REQUIRED → RESUME_SUBMITTED`, records a confirmation, and places the application in the HR pre-screen review queue. Duplicate application for the same applicant + opening is rejected server-side. AI pre-screening then runs (advisory, immutable); the HR reviews and records `QUALIFIED_FOR_ASSESSMENT` / `PRE_SCREEN_PENDING` / `NOT_CURRENTLY_QUALIFIED`.
 
 #### 42.4.1 Controlled bulk pre-screen decisions
 
-An authorised HR Reviewer may apply one pre-screen status to several reviewed applications as a queue convenience. Bulk action is permitted only when every selected application belongs to the same organisation, job opening, opening/configuration version, and Pre-screening stage, and is currently `PRE_SCREEN_ANALYSIS_READY` or `UNDER_HR_PRE_SCREEN_REVIEW`. Applications with processing failures, grievances, unresolved discrepancy/attention flags, stale versions, an existing locked HR decision, or any other stage/status are excluded and must be reviewed individually. Selection is by explicit application ID; "all matching" or hidden-page selection is never inferred from a filter.
+An authorised HR may apply one pre-screen status to several reviewed applications as a queue convenience. Bulk action is permitted only when every selected application belongs to the same organisation, job opening, opening/configuration version, and Pre-screening stage, and is currently `PRE_SCREEN_ANALYSIS_READY` or `UNDER_HR_PRE_SCREEN_REVIEW`. Applications with processing failures, grievances, unresolved discrepancy/attention flags, stale versions, an existing locked HR decision, or any other stage/status are excluded and must be reviewed individually. Selection is by explicit application ID; "all matching" or hidden-page selection is never inferred from a filter.
 
-Bulk processing never creates a shared decision. The service first re-authorizes and validates the complete selection against current database state, then materializes one attributable `hr_decisions` record, one confidential HR note, one applicant-visible status message, one application transition, one audit event, and one notification-outbox record per application. A batch/correlation ID links those individual records for operational traceability. The acting HR Reviewer must attest that every selected résumé and advisory analysis was reviewed; AI recommendations, scores, filters, and ranking never select or approve applicants automatically.
+Bulk processing never creates a shared decision. The service first re-authorizes and validates the complete selection against current database state, then materializes one attributable `hr_decisions` record, one confidential HR note, one applicant-visible status message, one application transition, one audit event, and one notification-outbox record per application. A batch/correlation ID links those individual records for operational traceability. The acting HR must attest that every selected résumé and advisory analysis was reviewed; AI recommendations, scores, filters, and ranking never select or approve applicants automatically.
 
 The supported bulk dispositions are `QUALIFIED_FOR_ASSESSMENT`, `PRE_SCREEN_PENDING`, and `NOT_CURRENTLY_QUALIFIED`. The shared note/message entered in the bulk form is copied into each application's own immutable decision record. For `QUALIFIED_FOR_ASSESSMENT`, a valid scheduled start, deadline, and permitted duration are required and a distinct secure invitation is created for every application. The entire batch is rejected before mutation if selection scope, authorization, eligibility, required text, or invitation timing fails for any application. The accepted batch writes all individual transitions and outbox records atomically and is idempotent by batch key, so a retry cannot duplicate decisions or notifications. A rolled-back batch sends nothing; delivery retries remain per applicant.
 
@@ -751,7 +751,7 @@ Before `ASSESSMENT_INVITED`, HR must set `scheduled_start_at`, `deadline_at`, an
 
 ### 42.6 AI evaluation, HR review, and the no-auto-decide rule
 
-After submission, `AI_PROCESSING` runs, then `ANALYSIS_READY` or `AI_PROCESSING_FAILED` (retried; never a false rejection). The AI result is immutable and advisory; the HR Reviewer reviews it and records `LIVE_INTERVIEW_RECOMMENDED` / `LIVE_INTERVIEW_HOLD` / `NOT_PROCEEDING`. AI never changes application state or makes a decision; every progression is a human decision (sections 21, 28, 30).
+After submission, `AI_PROCESSING` runs, then `ANALYSIS_READY` or `AI_PROCESSING_FAILED` (retried; never a false rejection). The AI result is immutable and advisory; the HR reviews it and records `LIVE_INTERVIEW_RECOMMENDED` / `LIVE_INTERVIEW_HOLD` / `NOT_PROCEEDING`. AI never changes application state or makes a decision; every progression is a human decision (sections 21, 28, 30).
 
 ### 42.7 Multiple Live Interview stages
 
@@ -778,7 +778,7 @@ Headcount is tracked as target vs reserved/selected vs onboarding-pending vs fil
 
 ### 42.11 Notification architecture
 
-A notification is emitted at every applicant-visible persisted transition. It is sent from the verified organisation address with the responsible HR Reviewer as `Reply-To`; individual mailbox credentials are never stored. A rolled-back transition must not send a contradictory email, and a failed send is retried without corrupting application state.
+A notification is emitted at every applicant-visible persisted transition. It is sent from the verified organisation address with the responsible HR as `Reply-To`; individual mailbox credentials are never stored. A rolled-back transition must not send a contradictory email, and a failed send is retried without corrupting application state.
 
 ### 42.12 Data integrity, authorization, and tenant isolation
 
@@ -819,15 +819,15 @@ Assessment attempts record one terminal outcome: `COMPLETED_SUCCESSFUL`, `COMPLE
 
 ### 43.4 Interview attempts and HR Interview
 
-`stage_interviewers` is the authoritative stage-scoped participant record. Its uniqueness is `(application_id, stage_id, interview_attempt_number, interviewer_membership_id)`. A missing evaluator triggers an hour-23 HR reminder and, at 24 hours, HR may create a reattempt with a replacement panel and applicant schedule. HR may act earlier when a valid reason is recorded. The replacement requires a new evaluation and writes the confidential retake note: “This user retook the interview approved by HR because the previous interview could not be evaluated for a valid reason.” The system alerts the assigned Hiring Manager, exposes the event to HR, adds it to the Organization Admin SLA report, and starts the configured escalation procedure. Original evaluations remain immutable audit history; only the retake evaluation set is eligible for stage progression. HR cancellation/reschedule retains applicant eligibility and invalidates the cancelled session. An applicant may submit an in-product grievance with a reason within 24 hours after the relevant configured stage deadline; after that the grievance window is rejected and the configured no-response/closure rule applies.
+`stage_interviewers` is the authoritative stage-scoped participant record. Its uniqueness is `(application_id, stage_id, interview_attempt_number, interviewer_membership_id)`. A missing evaluator triggers an hour-23 HR reminder and, at 24 hours, HR may create a reattempt with a replacement panel and applicant schedule. HR may act earlier when a valid reason is recorded. The replacement requires a new evaluation and writes the confidential retake note: “This user retook the interview approved by HR because the previous interview could not be evaluated for a valid reason.” The system alerts the assigned Hiring Manager, exposes the event to HR, adds it to the Organization Owner SLA report, and starts the configured escalation procedure. Original evaluations remain immutable audit history; only the retake evaluation set is eligible for stage progression. HR cancellation/reschedule retains applicant eligibility and invalidates the cancelled session. An applicant may submit an in-product grievance with a reason within 24 hours after the relevant configured stage deadline; after that the grievance window is rejected and the configured no-response/closure rule applies.
 
-HR Reviewer conducts/evaluates HR Interview and may make its subsequent progression or final decision, but the evaluation and HR decision remain distinct records. Interviewers receive only authorised applicant information and applicant-visible previous HR messages; AI and peer-evaluator data remain server-side denied.
+HR conducts/evaluates HR Interview and may make its subsequent progression or final decision, but the evaluation and HR decision remain distinct records. Interviewers receive only authorised applicant information and applicant-visible previous HR messages; AI and peer-evaluator data remain server-side denied.
 
 ### 43.5 Selection, onboarding, notifications, retention, and audit
 
 `application_selections` reserves capacity atomically at `SELECTED`; `position_fills` is created only when `onboarding_records.status = ONBOARDING_COMPLETED`, which preserves that committed capacity while incrementing the separately reported filled count. HR records external offer acceptance/decline and recruitment-side onboarding status. Decline, no-response suspension, onboarding failure, or cancellation releases an unfilled reservation and closes/suspends the application. Headcount queries calculate target, reserved, filled, and `available_to_select = target − reserved` under a row lock/transaction to prevent overfill.
 
-Every applicant-visible transition writes an outbox record in the same transaction. The sender is the verified organisation address and the responsible HR Reviewer is `Reply-To`; retry/failure cannot undo the state transition. Every HR decision persists exactly one confidential HR note plus exactly one applicant-visible status message; only the latter is placed in the outbox payload. `audit_events` is append-only. On a manual HM closure, HR retains full historical evidence; the assigned HM retains read-only historical assessment/AI/evaluator evidence and applicant-visible decisions for that opening; interviewers receive no historical evidence or decision access; Organization Admin receives only SLA/audit metadata. Non-selected records are scheduled for deletion one year after closure, and selected recruitment records at employment termination; legal holds override deletion and restrict access while active.
+Every applicant-visible transition writes an outbox record in the same transaction. The sender is the verified organisation address and the responsible HR is `Reply-To`; retry/failure cannot undo the state transition. Every HR decision persists exactly one confidential HR note plus exactly one applicant-visible status message; only the latter is placed in the outbox payload. `audit_events` is append-only. On a manual HM closure, HR retains full historical evidence; the assigned HM retains read-only historical assessment/AI/evaluator evidence and applicant-visible decisions for that opening; interviewers receive no historical evidence or decision access; Organization Owner receives only SLA/audit metadata. Non-selected records are scheduled for deletion one year after closure, and selected recruitment records at employment termination; legal holds override deletion and restrict access while active.
 
 ### 43.6 Workspace availability and account scope
 
@@ -837,8 +837,8 @@ Invalid, suspended, inactive, and unauthorised workspace URLs return one generic
 
 This section is binding where earlier architecture wording conflicts.
 
-1. **Two HR checks; Hiring Manager publishes.** The business Hiring Manager uses the organisation-level `REQUISITION_CREATOR` claim to create the requisition. HR first approves the versioned requisition; its creator then creates the draft opening and stage-specific panel nominations. HR approves/returns that package. Approval sets `APPROVED_TO_PUBLISH` and sends invitations; only the opening's `HIRING_MANAGER` performs Publish.
-2. **Separate authority scopes.** `REQUISITION_CREATOR` is organisation-scoped and can create/submit requisitions only. `HIRING_MANAGER` is a distinct job-opening-scoped claim created when that authorised person creates an opening from their approved requisition.
+1. **Two HR checks; Hiring Manager publishes.** The business Hiring Manager uses the organisation-level `HIRING_MANAGER` claim to create the requisition. HR first approves the versioned requisition; its creator then creates the draft opening and stage-specific panel nominations. HR approves/returns that package. Approval sets `APPROVED_TO_PUBLISH` and sends invitations; only the opening's `HIRING_MANAGER` performs Publish.
+2. **Separate authority scopes.** `HIRING_MANAGER` is organisation-scoped and can create/submit requisitions only. `HIRING_MANAGER` is a distinct job-opening-scoped claim created when that authorised person creates an opening from their approved requisition.
 3. **Simple interviewer invitation status.** A pending record keyed by opening + stage + normalized email stores the name, HR decision, and 24-hour deadline. The HR screen shows only `Invited`, `Activated`, or `Expired`; it is not a user or membership. Keycloak activation creates/links the realm identity/membership and opening role. Expiry notifies HR and the Hiring Manager, who may re-invite or use the normal replacement approval flow.
 4. **Same-realm role switching.** The role switcher never changes realm. Changing organisation requires logout and authentication in the other workspace realm; the same canonical email does not imply the same Keycloak ID or password.
 5. **Blind-review release.** Résumé/distance-travelled context is omitted until the AI/evaluator result locks; HR receives it for decision, and the Hiring Manager only after the HR decision locks. Interviewers and administrative monitoring roles never receive it.
@@ -847,28 +847,28 @@ This section is binding where earlier architecture wording conflicts.
 8. **Controlled actions and no-response suspension.** HR raises requisition/opening requests. The creating Hiring Manager alone executes/rejects withdrawal, suspension, reactivation, and closure requests in an in-product inbox with audit and notification; HR never directly closes an opening. Applicants have no self-withdrawal action: after a configured stage-response deadline, the application becomes `APPLICATION_SUSPENDED_NO_RESPONSE` and releases any reservation. HR may request reactivation, which only the creating Hiring Manager executes/rejects.
 9. **Service-owned mail and Keycloak links.** Mail uses the verified organisation address with the responsible reviewer/admin as `Reply-To`. Account invitations use single-use expiring Keycloak action links; plaintext/default passwords and individual mailbox credentials are never stored or emailed.
 10. **Headcount capacity.** `available_to_select = target − reserved`; `filled` is only completed onboarding. Selection reserves capacity transactionally; decline, automatic no-response suspension, failure, or cancellation releases it.
-11. **Super Admin ownership.** Superseded by section 45: Super Admin is the buyer/owner scoped by an explicit organization ownership record. It initiates Organization Admin appointment/replacement for that organization; it is neither Platform Admin nor a sole-HR-Reviewer recovery authority and has no recruitment-operation permissions.
+11. **Organization Admin ownership.** Superseded by section 45: Organization Admin is the buyer/owner scoped by an explicit organization ownership record. It initiates Organization Owner appointment/replacement for that organization; it is neither Organization provisioning service nor a sole-HR-Reviewer recovery authority and has no recruitment-operation permissions.
 12. **Accommodation and grievances.** HR sees full accommodation details and gives interviewers only the operational instruction required for their stage. Applicants may submit an in-product grievance with a reason within 24 hours after the relevant configured stage deadline; HR records the result and any reattempt.
-13. **Manual-closure retention access.** During retention/legal hold after manual HM closure, HR retains full historical assessment, AI, evaluator, HR-decision, and confidential-note access. The assigned HM retains read-only historical assessment/AI/evaluator evidence and applicant-visible HR decisions for that opening. Interviewers receive none of those historical records; Organization Admin receives SLA/audit metadata only.
+13. **Manual-closure retention access.** During retention/legal hold after manual HM closure, HR retains full historical assessment, AI, evaluator, HR-decision, and confidential-note access. The assigned HM retains read-only historical assessment/AI/evaluator evidence and applicant-visible HR decisions for that opening. Interviewers receive none of those historical records; Organization Owner receives SLA/audit metadata only.
 14. **Two HR-decision communications.** Every HR decision has exactly one confidential internal HR note and exactly one applicant-visible status message. Notifications use only the status message; all non-HR endpoints must deny the confidential note.
-15. **Missing required interviewer.** HR may record a valid reason, replace the required evaluator, and require one new evaluation/retake. The confidential retake remark, HM alert, HR visibility, Organization Admin SLA event, and escalation state are mandatory. Only the retake evaluation set governs progression; earlier submissions remain immutable.
+15. **Missing required interviewer.** HR may record a valid reason, replace the required evaluator, and require one new evaluation/retake. The confidential retake remark, HM alert, HR visibility, Organization Owner SLA event, and escalation state are mandatory. Only the retake evaluation set governs progression; earlier submissions remain immutable.
 16. **Assessment outcomes and retest.** Attempts are `COMPLETED_SUCCESSFUL`, `COMPLETED_UNSUCCESSFUL`, or `TEST_STARTED_NOT_COMPLETED`. A reasoned `VALID_WITHDRAWAL_OR_INCOMPLETE` sets a six-month retest eligibility date; it never resumes the prior application.
 
-Required DBML follow-up: introduce the opening approval/publication state machine, distinct `REQUISITION_CREATOR` and `HIRING_MANAGER` claims, pending stage-panel invitation data, 24-hour activation status, custom-stage execution fields, controlled-action request records, automatic no-response suspension, headcount reservation/available-capacity fields, Super Admin authority handover records, HR decision confidential-note/status-message fields, evaluator-replacement/SLA escalation records, manual-closure retention ACLs, and assessment outcome/retest eligibility fields plus a linked replacement-application relationship before implementation claims schema completeness.
+Required DBML follow-up: introduce the opening approval/publication state machine, distinct `HIRING_MANAGER` and `HIRING_MANAGER` claims, pending stage-panel invitation data, 24-hour activation status, custom-stage execution fields, controlled-action request records, automatic no-response suspension, headcount reservation/available-capacity fields, Organization Admin authority handover records, HR decision confidential-note/status-message fields, evaluator-replacement/SLA escalation records, manual-closure retention ACLs, and assessment outcome/retest eligibility fields plus a linked replacement-application relationship before implementation claims schema completeness.
 
-## 45. Super Admin ownership and Organization Admin appointment architecture
+## 45. Organization Admin ownership and Organization Owner appointment architecture
 
 This section supersedes the platform-level `SUPER_ADMIN` recovery wording in sections 1, 13, and 44.11. It is a proposed extension to the documented architecture and DBML; no new table, endpoint, worker, or Keycloak configuration is claimed as implemented merely by this document.
 
 ### 45.1 Authority and identity model
 
-The Super Admin is the buyer/business owner of an explicitly authorized organization, not an identity-provider administrator. The owner authenticates through the existing **onboarding** Keycloak realm before a tenant exists and continues to use that control-plane identity after provisioning. This is intentionally separate from:
+The Organization Admin is the buyer/business owner of an explicitly authorized organization, not an identity-provider administrator. The owner authenticates through the existing **onboarding** Keycloak realm before a tenant exists and continues to use that control-plane identity after provisioning. This is intentionally separate from:
 
-- **Platform Admin** — authenticates in `master`, approves onboarding, and invokes backend-controlled provisioning.
-- **Organization Admin** — authenticates in the organization’s dedicated realm and runs existing tenant operations.
+- **Organization provisioning service** — authenticates in `master`, approves onboarding, and invokes backend-controlled provisioning.
+- **Organization Owner** — authenticates in the organization’s dedicated realm and runs existing tenant operations.
 - **Keycloak administration** — performed only by the backend’s server-side Keycloak Admin API adapter.
 
-`SUPER_ADMIN` need not be a realm-wide Keycloak role. The backend derives owner permissions from the authenticated onboarding-realm identity plus a PostgreSQL ownership relationship. An ownership relationship is scoped to exactly one organization; an owner may be linked to multiple organizations only through separate explicit records. Tenant IDs from the client, another tenant realm session, or hidden UI controls never establish ownership. Owners receive neither Platform Admin, Organization Admin, Hiring Manager, HR Reviewer, Interviewer, Applicant, nor cross-organization authority by inheritance.
+`SUPER_ADMIN` need not be a realm-wide Keycloak role. The backend derives owner permissions from the authenticated onboarding-realm identity plus a PostgreSQL ownership relationship. An ownership relationship is scoped to exactly one organization; an owner may be linked to multiple organizations only through separate explicit records. Tenant IDs from the client, another tenant realm session, or hidden UI controls never establish ownership. Owners receive neither Organization provisioning service, Organization Owner, Hiring Manager, HR, Interviewer, Applicant, nor cross-organization authority by inheritance.
 
 ### 45.2 Proposed records and audit fields
 
@@ -876,53 +876,53 @@ The following additions require a DBML/schema implementation pass before impleme
 
 | Proposed record | Minimum responsibility | Important constraints |
 |---|---|---|
-| `organization_ownership` | Links `organization_id` to the Super Admin’s onboarding-realm/canonical identity. | One active owner is a policy default; any ownership transfer is a separate, unapproved future decision. |
+| `organization_ownership` | Links `organization_id` to the Organization Admin’s onboarding-realm/canonical identity. | One active owner is a policy default; any ownership transfer is a separate, unapproved future decision. |
 | `organization_admin_appointments` | Append-only initial/replacement appointment lifecycle. | One active appointment per organization; retains initiator, outgoing/incoming identity, effective timestamp, status, reason, correlation ID, and invitation/verification evidence references. |
 | `admin_replacement_transitions` or equivalent state data | Tracks the guarded work across PostgreSQL, Keycloak, and notification delivery. | Idempotency key, retry state, error/recovery metadata; no duplicate simultaneous replacement. |
 | extended `audit_events` / assignment audit | Preserves historical attribution for every authority change. | `organization_id`, recipient, actor, actor-authority snapshot, created/modified/revoked timestamps, status, reason, and immutable correlation ID. |
 
-Existing role assignments must preserve `created_by_user_id` (or equivalent immutable actor reference), the actor’s authority at the time, the recipient, organization, job-opening scope where applicable, current status, later modifier/revoker, timestamps, and required reason. Revoking Organization Admin authority must never overwrite the original actor on prior Hiring Manager, HR Reviewer, Interviewer, or other assignments.
+Existing role assignments must preserve `created_by_user_id` (or equivalent immutable actor reference), the actor’s authority at the time, the recipient, organization, job-opening scope where applicable, current status, later modifier/revoker, timestamps, and required reason. Revoking Organization Owner authority must never overwrite the original actor on prior Hiring Manager, HR, Interviewer, or other assignments.
 
 ### 45.3 Onboarding sequence and appointment activation
 
 ~~~text
-Super Admin (onboarding realm)
+Organization Admin (onboarding realm)
   -> submits organization details + initial-admin nomination
   -> PENDING_REVIEW (no organization ID / no tenant realm)
-Platform Admin (master realm)
+Organization provisioning service (master realm)
   -> approve or return/reject
   -> backend provisions organization + dedicated realm
   -> ownership record + initial appointment = INVITED
-Nominated Organization Admin
+Nominated Organization Owner
   -> registration/linking + Keycloak verification + acceptance
   -> active tenant membership + ORGANIZATION_ADMIN role
   -> appointment = ACTIVE; notifications sent
 ~~~
 
-The initial candidate is nominated by the Super Admin but appointed only after Platform Admin approval, realm provisioning, identity verification, and required acceptance succeed. The candidate may be an existing eligible identity or a new invitee. Realm-local Keycloak IDs are not transferable: an identity in another organization realm is linked/created through an explicit supported identity flow, never silently moved. The system must not create active tenant membership or administrative privilege merely because a form was submitted.
+The initial candidate is nominated by the Organization Admin but appointed only after Organization provisioning service approval, realm provisioning, identity verification, and required acceptance succeed. The candidate may be an existing eligible identity or a new invitee. Realm-local Keycloak IDs are not transferable: an identity in another organization realm is linked/created through an explicit supported identity flow, never silently moved. The system must not create active tenant membership or administrative privilege merely because a form was submitted.
 
 The provisioning orchestration is idempotent and records an operation/correlation ID before external effects. It writes `PROVISIONING`, `REALM_READY`, `AWAITING_ADMIN_ACTIVATION`, `ACTIVE`, or `PROVISIONING_RECOVERY` (and return/rejection states) truthfully. Database status becomes final only when the matching Keycloak realm/identity/membership state is confirmed. A partial failure retains repair metadata, retries safely, or runs a compensating action; the frontend has no privileged Keycloak Admin access.
 
-### 45.4 Organization Admin replacement transaction and recovery
+### 45.4 Organization Owner replacement transaction and recovery
 
-Ordinary replacement is a controlled transition, initiated only by the linked Super Admin:
+Ordinary replacement is a controlled transition, initiated only by the linked Organization Admin:
 
 1. Authorize owner + target organization; lock/reject concurrent replacement transitions; read the active appointment.
 2. Validate candidate identity/eligibility and classify it as existing eligible identity, registration required, another-realm identity requiring explicit linking, or failed/ineligible. Create `INVITED`, `EMAIL_VERIFICATION_PENDING`, or `ACCEPTANCE_PENDING` state without changing the outgoing authority.
-3. Expiry/rejection/validation failure ends as `EXPIRED`, `REJECTED`, or `VALIDATION_FAILED`; outgoing Organization Admin access remains active and the owner may nominate another candidate.
-4. After verification and acceptance, revalidate ownership and current appointment, prepare the incoming realm identity/membership, and activate its `ORGANIZATION_ADMIN` role within the same guarded logical transition that ends the outgoing Organization Admin role.
-5. Commit append-only appointment/audit events, then notify outgoing/incoming administrators and the Super Admin. Existing tenant data and role assignments remain intact.
+3. Expiry/rejection/validation failure ends as `EXPIRED`, `REJECTED`, or `VALIDATION_FAILED`; outgoing Organization Owner access remains active and the owner may nominate another candidate.
+4. After verification and acceptance, revalidate ownership and current appointment, prepare the incoming realm identity/membership, and activate its `ORGANIZATION_ADMIN` role within the same guarded logical transition that ends the outgoing Organization Owner role.
+5. Commit append-only appointment/audit events, then notify outgoing/incoming administrators and the Organization Admin. Existing tenant data and role assignments remain intact.
 
-The intended steady state has one active Organization Admin and no indefinite dual administrative access. If incoming activation fails before the transition commits, the outgoing administrator remains active and the transition becomes `ACTIVATION_FAILED` / `RECOVERY_REQUIRED`; reconciliation compares recorded operation state with Keycloak and repairs/compensates safely. If a security incident requires immediate outgoing suspension, use a distinct emergency-revocation action. It may produce `NO_ACTIVE_ADMIN_RECOVERY`, invokes authorized Platform Admin recovery, and blocks routine administration until a verified replacement becomes active. It never silently promotes another member.
+The intended steady state has one active Organization Owner and no indefinite dual administrative access. If incoming activation fails before the transition commits, the outgoing administrator remains active and the transition becomes `ACTIVATION_FAILED` / `RECOVERY_REQUIRED`; reconciliation compares recorded operation state with Keycloak and repairs/compensates safely. If a security incident requires immediate outgoing suspension, use a distinct emergency-revocation action. It may produce `NO_ACTIVE_ADMIN_RECOVERY`, invokes authorized Organization provisioning service recovery, and blocks routine administration until a verified replacement becomes active. It never silently promotes another member.
 
-Revoking Organization Admin does not revoke separately scoped Hiring Manager, HR Reviewer, or Interviewer assignments held by the outgoing person. Those remain governed by their existing lifecycles and must be independently changed through an authorized operation.
+Revoking Organization Owner does not revoke separately scoped Hiring Manager, HR, or Interviewer assignments held by the outgoing person. Those remain governed by their existing lifecycles and must be independently changed through an authorized operation.
 
 ### 45.5 Authorization and API boundary (proposed)
 
-Proposed owner endpoints are `POST /organization-onboarding-requests`, `GET /owner/organizations`, `GET /owner/organizations/{id}/admin-appointments`, `POST /owner/organizations/{id}/admin-replacements`, and read-only `GET /owner/organizations/{id}/audit`. They require a validated onboarding-realm owner identity and a server-side ownership lookup. Proposed Platform Admin endpoints remain responsible for review/provisioning; only the backend adapter calls Keycloak Admin APIs. Organization Admin must be denied any ownership mutation or appointment-replacement endpoint. UI hiding is informational; every request rechecks realm, ownership, membership, role scope, lifecycle state, and object tenant relationship server-side and audits denials.
+Proposed owner endpoints are `POST /organization-onboarding-requests`, `GET /owner/organizations`, `GET /owner/organizations/{id}/admin-appointments`, `POST /owner/organizations/{id}/admin-replacements`, and read-only `GET /owner/organizations/{id}/audit`. They require a validated onboarding-realm owner identity and a server-side ownership lookup. Proposed Organization provisioning service endpoints remain responsible for review/provisioning; only the backend adapter calls Keycloak Admin APIs. Organization Owner must be denied any ownership mutation or appointment-replacement endpoint. UI hiding is informational; every request rechecks realm, ownership, membership, role scope, lifecycle state, and object tenant relationship server-side and audits denials.
 
 ### 45.6 Explicit open decisions
 
-1. **Ownership transfer and loss/compromise of the Super Admin account** are not defined by the current artifacts. This update supports Organization Admin replacement, not ownership transfer. A platform-authorized recovery/ownership-transfer policy, evidence standard, quorum, and audit model need product/security approval before implementation.
+1. **Ownership transfer and loss/compromise of the Organization Admin account** are not defined by the current artifacts. This update supports Organization Owner replacement, not ownership transfer. A platform-authorized recovery/ownership-transfer policy, evidence standard, quorum, and audit model need product/security approval before implementation.
 2. **Multiple owners** are not approved. The proposed model permits multiple owned organizations per person through discrete records, but assumes one active owner per organization until the business policy says otherwise.
 3. **Acceptance requirement** is represented as required for a normal appointment/replacement. Exact Keycloak required actions, expiry duration, resend limits, and emergency-approval authority must align with the deployed identity configuration.

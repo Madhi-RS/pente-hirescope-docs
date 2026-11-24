@@ -1,0 +1,932 @@
+Project hirescope {
+  database_type: 'PostgreSQL'
+  Note: 'Replacement logical schema from the finalized table catalogue. Staff roles: ORGANIZATION_ADMIN, HR, HIRING_MANAGER, INTERVIEWER. Organization Owner uses organization_owner_assignments; Applicant is application-scoped.'
+}
+
+Table canonical_people {
+  canonical_person_id uuid [pk]
+  normalized_email varchar(255) [not null, unique]
+  email_verified_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table users {
+  keycloak_user_id uuid [pk]
+  canonical_person_id uuid [not null]
+  email varchar(255) [not null]
+  keycloak_realm varchar(50) [not null]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  phone varchar(20)
+  is_assigned boolean [not null, default: false]
+  status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table organizations {
+  organization_id uuid [pk]
+  organization_name varchar(150) [not null]
+  keycloak_realm varchar(50) [not null, unique]
+  status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table organization_onboarding_requests {
+  onboarding_request_id uuid [pk]
+  requester_keycloak_user_id uuid [not null]
+  organization_name varchar(150) [not null]
+  document_url text [not null]
+  comment text
+  request_status varchar(30) [not null]
+  rejection_reason text
+  approved_organization_id uuid
+  provisioning_status varchar(30) [not null]
+  provisioning_error text
+  provisioning_attempts integer [not null, default: 0]
+  last_provisioning_attempt_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table organization_memberships {
+  membership_id uuid [pk]
+  organization_id uuid [not null]
+  keycloak_user_id uuid [not null]
+  membership_status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (organization_id, keycloak_user_id) [unique] }
+}
+
+Table organization_owner_assignments {
+  owner_assignment_id uuid [pk]
+  organization_id uuid [not null]
+  owner_keycloak_user_id uuid [not null]
+  onboarding_request_id uuid
+  ownership_status varchar(30) [not null]
+  assigned_at timestamptz [not null]
+  revoked_at timestamptz
+  revocation_reason text
+  created_at timestamptz [not null]
+  Indexes { (organization_id, owner_keycloak_user_id) [unique] }
+}
+
+Table organization_admin_appointments {
+  appointment_id uuid [pk]
+  organization_id uuid [not null]
+  initiated_by_owner_assignment_id uuid [not null]
+  outgoing_membership_id uuid
+  incoming_keycloak_user_id uuid [not null]
+  incoming_membership_id uuid
+  status varchar(40) [not null]
+  invitation_token_reference varchar(255)
+  invitation_expires_at timestamptz
+  activated_at timestamptz
+  failure_reason text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table role_verification_requests {
+  verification_id uuid [pk]
+  keycloak_user_id uuid [not null]
+  organization_id uuid [not null]
+  requested_role varchar(30) [not null]
+  document_url text [not null]
+  membership_id uuid [not null]
+  job_opening_id uuid
+  rejection_reason text
+  supersedes_verification_id uuid
+  comment text
+  verification_status varchar(20) [not null]
+  reviewed_by_membership_id uuid
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table job_requisitions {
+  requisition_id uuid [pk]
+  organization_id uuid [not null]
+  created_by_membership_id uuid [not null]
+  title varchar(150) [not null]
+  description text [not null]
+  position_count integer [not null]
+  business_justification text
+  salary_min numeric(12,2)
+  salary_max numeric(12,2)
+  experience_required text
+  skills text
+  job_requirements text
+  eligibility_criteria text
+  employment_type varchar(30)
+  location_work_mode varchar(50)
+  department varchar(100)
+  target_location varchar(150)
+  target_start_date date
+  status varchar(30) [not null]
+  approved_requisition_version_id uuid
+  submitted_at timestamptz
+  last_submitted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table requisition_versions {
+  requisition_version_id uuid [pk]
+  requisition_id uuid [not null]
+  version_number integer [not null]
+  title varchar(150) [not null]
+  department varchar(100)
+  description text [not null]
+  target_location varchar(150)
+  target_start_date date
+  position_count integer [not null]
+  business_justification text
+  salary_min numeric(12,2)
+  salary_max numeric(12,2)
+  experience_required text
+  skills text
+  job_requirements text
+  eligibility_criteria text
+  employment_type varchar(30)
+  location_work_mode varchar(50)
+  submitted_by_membership_id uuid
+  submitted_at timestamptz
+  created_at timestamptz [not null]
+  Indexes { (requisition_id, version_number) [unique] }
+}
+
+Table requisition_reviews {
+  review_id uuid [pk]
+  requisition_id uuid [not null]
+  requisition_version_id uuid [not null]
+  reviewed_by_membership_id uuid [not null]
+  review_status varchar(30) [not null]
+  comment text
+  last_submitted_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table requisition_version_stages {
+  requisition_version_stage_id uuid [pk]
+  requisition_version_id uuid [not null]
+  stage_name varchar(100) [not null]
+  stage_type varchar(30) [not null]
+  stage_order smallint [not null]
+  mode varchar(30) [not null]
+  instructions text
+  weight smallint
+  max_score numeric(6,2)
+  passing_score numeric(6,2)
+  conductor_rule text
+  required_interviewer_count smallint
+  requires_scheduling boolean [not null, default: false]
+  requires_applicant_submission boolean [not null, default: false]
+  requires_evaluator_submission boolean [not null, default: false]
+  completion_condition text
+  created_at timestamptz [not null]
+  Indexes { (requisition_version_id, stage_order) [unique] }
+}
+
+Table requisition_version_stage_sections {
+  requisition_version_section_id uuid [pk]
+  requisition_version_stage_id uuid [not null]
+  section_name varchar(100) [not null]
+  section_type varchar(30) [not null]
+  section_order smallint [not null]
+  instructions text
+  weight smallint
+  max_score numeric(6,2)
+  preparation_minutes integer
+  duration_minutes integer
+  recording_enabled boolean [not null, default: false]
+  re_record_enabled boolean [not null, default: false]
+  max_re_record_count smallint
+  Indexes { (requisition_version_stage_id, section_order) [unique] }
+}
+
+Table requisition_version_stage_questions {
+  requisition_version_question_id uuid [pk]
+  requisition_version_section_id uuid [not null]
+  question_text text [not null]
+  question_type varchar(30) [not null]
+  question_order smallint [not null]
+  help_text text
+  is_required boolean [not null, default: false]
+  validation_rule text
+  max_score numeric(6,2)
+  Indexes { (requisition_version_section_id, question_order) [unique] }
+}
+
+Table requisition_version_stage_question_options {
+  requisition_version_option_id uuid [pk]
+  requisition_version_question_id uuid [not null]
+  option_text text [not null]
+  option_order smallint [not null]
+  is_correct boolean [not null, default: false]
+  score_value numeric(6,2)
+  created_at timestamptz [not null]
+  Indexes { (requisition_version_question_id, option_order) [unique] }
+}
+
+Table requisition_version_interview_criteria {
+  requisition_version_criteria_id uuid [pk]
+  requisition_version_stage_id uuid [not null]
+  criteria_name varchar(100) [not null]
+  weight smallint [not null]
+  max_score numeric(6,2) [not null]
+  guidance text
+  is_required boolean [not null, default: true]
+  rating_scale jsonb
+  criteria_order smallint [not null]
+  created_at timestamptz [not null]
+  Indexes { (requisition_version_stage_id, criteria_order) [unique] }
+}
+
+Table job_openings {
+  job_opening_id uuid [pk]
+  organization_id uuid [not null]
+  created_by_membership_id uuid [not null]
+  requisition_id uuid [not null]
+  title varchar(150) [not null]
+  description text [not null]
+  target_headcount integer [not null]
+  work_location varchar(150)
+  target_start_date date
+  active_opening_version_id uuid
+  status varchar(30) [not null]
+  published_at timestamptz
+  suspended_at timestamptz
+  closed_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table opening_versions {
+  opening_version_id uuid [pk]
+  job_opening_id uuid [not null]
+  requisition_version_id uuid [not null]
+  version_number integer [not null]
+  based_on_opening_version_id uuid
+  title varchar(150) [not null]
+  description text [not null]
+  target_headcount integer [not null]
+  work_location varchar(150)
+  target_start_date date
+  version_status varchar(30) [not null]
+  submitted_by_membership_id uuid
+  submitted_at timestamptz
+  published_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (job_opening_id, version_number) [unique] }
+}
+
+Table opening_version_reviews {
+  opening_review_id uuid [pk]
+  opening_version_id uuid [not null]
+  reviewed_by_membership_id uuid [not null]
+  review_status varchar(30) [not null]
+  comment text
+  reviewed_at timestamptz [not null]
+  created_at timestamptz [not null]
+}
+
+Table job_opening_stages {
+  stage_id uuid [pk]
+  job_opening_id uuid [not null]
+  opening_version_id uuid [not null]
+  stage_name varchar(100) [not null]
+  stage_type varchar(30) [not null]
+  stage_order smallint [not null]
+  mode varchar(20) [not null]
+  instructions text
+  weight smallint
+  interviewer_access_instructions text
+  max_score numeric(6,2)
+  passing_score numeric(6,2)
+  required_interviewer_count smallint
+  evaluator_aggregation_policy varchar(30)
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (opening_version_id, stage_order) [unique] }
+}
+
+Table stage_sections {
+  section_id uuid [pk]
+  stage_id uuid [not null]
+  section_name varchar(100) [not null]
+  section_type varchar(30) [not null]
+  section_order smallint [not null]
+  instructions text
+  max_score numeric(6,2)
+  weight smallint
+  preparation_minutes integer
+  duration_minutes integer
+  recording_enabled boolean [not null, default: false]
+  re_record_enabled boolean [not null, default: false]
+  max_re_record_count smallint
+  Indexes { (stage_id, section_order) [unique] }
+}
+
+Table stage_questions {
+  question_id uuid [pk]
+  section_id uuid [not null]
+  question_text text [not null]
+  question_type varchar(30) [not null]
+  question_order smallint [not null]
+  max_score numeric(6,2)
+  help_text text
+  is_required boolean [not null, default: false]
+  validation_rule text
+  Indexes { (section_id, question_order) [unique] }
+}
+
+Table stage_question_options {
+  option_id uuid [pk]
+  question_id uuid [not null]
+  option_text text [not null]
+  option_order smallint [not null]
+  is_correct boolean [not null, default: false]
+  score_value numeric(6,2)
+  created_at timestamptz [not null]
+  Indexes { (question_id, option_order) [unique] }
+}
+
+Table interview_criteria {
+  criteria_id uuid [pk]
+  stage_id uuid [not null]
+  criteria_name varchar(100) [not null]
+  weight smallint [not null]
+  max_score numeric(6,2) [not null]
+  guidance text
+  is_required boolean [not null, default: true]
+  rating_scale jsonb
+  criteria_order smallint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (stage_id, criteria_order) [unique] }
+}
+
+Table opening_stage_interviewer_nominations {
+  nomination_id uuid [pk]
+  opening_version_id uuid [not null]
+  stage_id uuid [not null]
+  interviewer_membership_id uuid
+  invitee_name varchar(200) [not null]
+  invitee_email varchar(255) [not null]
+  normalized_invitee_email varchar(255) [not null]
+  nomination_status varchar(30) [not null]
+  hr_reviewed_by_membership_id uuid
+  hr_reviewed_at timestamptz
+  invitation_token_reference varchar(255)
+  invitation_sent_at timestamptz
+  invitation_expires_at timestamptz
+  activated_at timestamptz
+  replaced_by_nomination_id uuid
+  created_by_membership_id uuid [not null]
+  created_at timestamptz [not null]
+  Indexes { (opening_version_id, stage_id, normalized_invitee_email) [unique] }
+}
+
+Table organization_member_roles {
+  member_role_id uuid [pk]
+  membership_id uuid [not null]
+  role varchar(30) [not null]
+  job_opening_id uuid
+  source_nomination_id uuid
+  assignment_status varchar(30) [not null]
+  revoked_at timestamptz
+  revocation_reason text
+  created_at timestamptz [not null]
+}
+
+Table applicant_profiles {
+  applicant_profile_id uuid [pk]
+  canonical_person_id uuid [not null, unique]
+  phone varchar(20)
+  college_name varchar(200)
+  degree_name varchar(150)
+  specialization varchar(150)
+  cgpa numeric(4,2)
+  graduation_year smallint
+  city varchar(100)
+  profile_status varchar(20) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table job_applications {
+  application_id uuid [pk]
+  job_opening_id uuid [not null]
+  keycloak_user_id uuid [not null]
+  current_stage_id uuid
+  opening_version_id uuid [not null]
+  canonical_person_id uuid [not null]
+  replaces_application_id uuid
+  interest_registered_at timestamptz
+  status_updated_at timestamptz [not null]
+  retest_eligible_at timestamptz
+  status varchar(50) [not null]
+  distance_traveled_context text
+  applied_at timestamptz
+  updated_at timestamptz [not null]
+}
+
+Table application_documents {
+  application_document_id uuid [pk]
+  application_id uuid [not null]
+  document_type varchar(40) [not null]
+  storage_object_key text [not null]
+  file_name varchar(255) [not null]
+  mime_type varchar(100) [not null]
+  file_size_bytes bigint [not null]
+  content_hash varchar(128)
+  uploaded_at timestamptz [not null]
+  deleted_at timestamptz
+}
+
+Table stage_attempts {
+  attempt_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  attempt_number smallint [not null]
+  opening_version_id uuid [not null]
+  scheduled_start_at timestamptz
+  deadline_at timestamptz
+  permitted_duration_minutes integer
+  configuration_version integer [not null]
+  configuration_locked_at timestamptz
+  readiness_status varchar(20) [not null]
+  readiness_confirmed_at timestamptz
+  interrupted_at timestamptz
+  interruption_resolution_due_at timestamptz
+  locked_at timestamptz
+  terminal_outcome varchar(50)
+  submitted_at timestamptz
+  Indexes { (application_id, stage_id, attempt_number) [unique] }
+}
+
+Table candidate_responses {
+  response_id uuid [pk]
+  attempt_id uuid [not null]
+  question_id uuid [not null]
+  response_text text
+  selected_option_id uuid
+  response_status varchar(30) [not null]
+  locked_at timestamptz
+  active_media_recording_id uuid
+  responded_at timestamptz [not null]
+}
+
+Table candidate_response_media_versions {
+  media_recording_id uuid [pk]
+  response_id uuid [not null]
+  attempt_id uuid [not null]
+  recording_version smallint [not null]
+  storage_object_key text [not null]
+  mime_type varchar(100) [not null]
+  duration_seconds integer
+  transcript_text text
+  transcription_status varchar(20) [not null]
+  is_active boolean [not null, default: false]
+  recorded_at timestamptz [not null]
+  submitted_at timestamptz
+  superseded_at timestamptz
+  Indexes { (response_id, recording_version) [unique] }
+}
+
+Table ai_stage_evaluations {
+  evaluation_id uuid [pk]
+  attempt_id uuid [not null]
+  evaluation_type varchar(30) [not null]
+  evaluation_config_version integer [not null]
+  processing_status varchar(20) [not null]
+  processing_error text
+  input_document_id uuid
+  retry_of_evaluation_id uuid
+  score numeric(6,2)
+  evaluation text
+  created_at timestamptz [not null]
+  completed_at timestamptz
+}
+
+Table ai_evaluation_areas {
+  area_evaluation_id uuid [pk]
+  evaluation_id uuid [not null]
+  area_name varchar(40) [not null]
+  area_score smallint [not null]
+  reasoning text [not null]
+  Indexes { (evaluation_id, area_name) [unique] }
+}
+
+Table voice_integrity_checks {
+  integrity_check_id uuid [pk]
+  attempt_id uuid [not null]
+  comparison varchar(30) [not null]
+  flag varchar(20) [not null]
+  disposition varchar(30)
+  resolved_by_membership_id uuid
+  created_at timestamptz [not null]
+  resolved_at timestamptz
+}
+
+Table stage_results {
+  stage_result_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  attempt_id uuid
+  score numeric(6,2)
+  result varchar(30) [not null]
+  result_summary text
+  completed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table hr_decisions {
+  decision_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  decided_by_membership_id uuid [not null]
+  ai_evaluation_id uuid
+  decision varchar(40) [not null]
+  created_at timestamptz [not null]
+}
+
+Table hr_decision_internal_notes {
+  internal_note_id uuid [pk]
+  decision_id uuid [not null, unique]
+  author_membership_id uuid [not null]
+  note text [not null]
+  created_at timestamptz [not null]
+}
+
+Table hr_decision_status_messages {
+  status_message_id uuid [pk]
+  decision_id uuid [not null, unique]
+  message text [not null]
+  created_at timestamptz [not null]
+}
+
+Table pre_screen_decision_batches {
+  decision_batch_id uuid [pk]
+  organization_id uuid [not null]
+  job_opening_id uuid [not null]
+  opening_version_id uuid [not null]
+  stage_id uuid [not null]
+  decision varchar(40) [not null]
+  initiated_by_membership_id uuid [not null]
+  idempotency_key varchar(255) [not null, unique]
+  status varchar(30) [not null]
+  confirmed_at timestamptz
+  completed_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table pre_screen_decision_batch_items {
+  decision_batch_item_id uuid [pk]
+  decision_batch_id uuid [not null]
+  application_id uuid [not null]
+  hr_decision_id uuid
+  item_status varchar(30) [not null]
+  validation_reason text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (decision_batch_id, application_id) [unique] }
+}
+
+Table assessment_invitations {
+  invitation_id uuid [pk]
+  application_id uuid [not null]
+  attempt_id uuid [not null]
+  recipient_email varchar(255) [not null]
+  token_reference varchar(255) [not null, unique]
+  status varchar(30) [not null]
+  sent_at timestamptz
+  expires_at timestamptz [not null]
+  redeemed_at timestamptz
+}
+
+Table assessment_grievances {
+  grievance_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  attempt_id uuid [not null]
+  decision_due_at timestamptz [not null]
+  confidential_hr_note text
+  comment text [not null]
+  status varchar(30) [not null]
+  decided_by_membership_id uuid
+  created_at timestamptz [not null]
+  decided_at timestamptz
+}
+
+Table application_accommodations {
+  accommodation_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  request_detail text [not null]
+  operational_instruction text
+  status varchar(30) [not null]
+  decided_by_membership_id uuid
+  decided_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table stage_interviewers {
+  stage_interviewer_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid [not null]
+  interviewer_membership_id uuid [not null]
+  attempt_id uuid [not null]
+  replaced_by_stage_interviewer_id uuid
+  evaluation_started_at timestamptz
+  submission_locked_at timestamptz
+  access_revoked_at timestamptz
+  access_revocation_reason text
+  status varchar(30) [not null]
+  overall_comment text
+  interview_attempt_number smallint [not null]
+  assigned_at timestamptz [not null]
+  submitted_at timestamptz
+  Indexes { (application_id, stage_id, interview_attempt_number, interviewer_membership_id) [unique] }
+}
+
+Table interview_results {
+  interview_result_id uuid [pk]
+  criteria_id uuid [not null]
+  stage_interviewer_id uuid [not null]
+  score numeric(6,2) [not null]
+  comment text
+  result_status varchar(20) [not null]
+  saved_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes { (criteria_id, stage_interviewer_id) [unique] }
+}
+
+Table hiring_manager_comments {
+  hiring_manager_comment_id uuid [pk]
+  application_id uuid [not null]
+  stage_id uuid
+  author_membership_id uuid [not null]
+  comment text [not null]
+  created_at timestamptz [not null]
+}
+
+Table workflow_action_requests {
+  action_request_id uuid [pk]
+  requisition_id uuid
+  job_opening_id uuid
+  application_id uuid
+  requested_by_membership_id uuid [not null]
+  target_membership_id uuid [not null]
+  action_type varchar(40) [not null]
+  reason text [not null]
+  status varchar(30) [not null]
+  responded_by_membership_id uuid
+  responded_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table application_stage_transitions {
+  transition_id uuid [pk]
+  application_id uuid [not null]
+  from_stage_id uuid
+  to_stage_id uuid
+  from_status varchar(40)
+  to_status varchar(40) [not null]
+  transition_type varchar(40) [not null]
+  hr_decision_id uuid
+  performed_by_membership_id uuid
+  occurred_at timestamptz [not null]
+}
+
+Table application_selections {
+  selection_id uuid [pk]
+  application_id uuid [not null, unique]
+  selected_by_membership_id uuid [not null]
+  selected_at timestamptz [not null]
+  offer_status varchar(30) [not null]
+  offer_recorded_by_membership_id uuid
+  offer_recorded_at timestamptz
+  reservation_status varchar(30) [not null]
+  reserved_at timestamptz [not null]
+  released_at timestamptz
+  release_reason text
+}
+
+Table onboarding_records {
+  onboarding_id uuid [pk]
+  selection_id uuid [not null, unique]
+  status varchar(30) [not null]
+  updated_by_membership_id uuid [not null]
+  updated_at timestamptz [not null]
+  completion_reference text
+  failure_reason text
+}
+
+Table position_fills {
+  position_fill_id uuid [pk]
+  job_opening_id uuid [not null]
+  application_id uuid
+  selection_id uuid
+  filled_by_membership_id uuid
+  filled_at timestamptz [not null]
+  reason text
+  created_at timestamptz [not null]
+}
+
+Table legal_holds {
+  legal_hold_id uuid [pk]
+  organization_id uuid [not null]
+  application_id uuid
+  scope varchar(30) [not null]
+  reason text [not null]
+  status varchar(20) [not null]
+  placed_by_membership_id uuid [not null]
+  placed_at timestamptz [not null]
+  released_by_membership_id uuid
+  released_at timestamptz
+}
+
+Table notification_outbox {
+  notification_id uuid [pk]
+  organization_id uuid [not null]
+  entity_type varchar(40) [not null]
+  entity_id uuid [not null]
+  event_type varchar(60) [not null]
+  sender_membership_id uuid
+  recipient_email varchar(255) [not null]
+  correlation_id uuid
+  template_data jsonb
+  status varchar(30) [not null]
+  retry_count integer [not null, default: 0]
+  provider_reason text
+  created_at timestamptz [not null]
+  sent_at timestamptz
+}
+
+Table audit_events {
+  audit_event_id uuid [pk]
+  organization_id uuid [not null]
+  correlation_id uuid
+  entity_type varchar(40) [not null]
+  entity_id uuid [not null]
+  actor_membership_id uuid
+  event_type varchar(60) [not null]
+  reason text
+  event_data jsonb
+  created_at timestamptz [not null]
+}
+
+Ref: users.canonical_person_id > canonical_people.canonical_person_id
+Ref: organization_onboarding_requests.requester_keycloak_user_id > users.keycloak_user_id
+Ref: organization_onboarding_requests.approved_organization_id > organizations.organization_id
+Ref: organization_memberships.organization_id > organizations.organization_id
+Ref: organization_memberships.keycloak_user_id > users.keycloak_user_id
+Ref: organization_owner_assignments.organization_id > organizations.organization_id
+Ref: organization_owner_assignments.owner_keycloak_user_id > users.keycloak_user_id
+Ref: organization_owner_assignments.onboarding_request_id > organization_onboarding_requests.onboarding_request_id
+Ref: organization_admin_appointments.organization_id > organizations.organization_id
+Ref: organization_admin_appointments.initiated_by_owner_assignment_id > organization_owner_assignments.owner_assignment_id
+Ref: organization_admin_appointments.outgoing_membership_id > organization_memberships.membership_id
+Ref: organization_admin_appointments.incoming_keycloak_user_id > users.keycloak_user_id
+Ref: organization_admin_appointments.incoming_membership_id > organization_memberships.membership_id
+Ref: role_verification_requests.keycloak_user_id > users.keycloak_user_id
+Ref: role_verification_requests.organization_id > organizations.organization_id
+Ref: role_verification_requests.membership_id > organization_memberships.membership_id
+Ref: role_verification_requests.job_opening_id > job_openings.job_opening_id
+Ref: role_verification_requests.reviewed_by_membership_id > organization_memberships.membership_id
+Ref: role_verification_requests.supersedes_verification_id > role_verification_requests.verification_id
+Ref: job_requisitions.organization_id > organizations.organization_id
+Ref: job_requisitions.created_by_membership_id > organization_memberships.membership_id
+Ref: job_requisitions.approved_requisition_version_id > requisition_versions.requisition_version_id
+Ref: requisition_versions.requisition_id > job_requisitions.requisition_id
+Ref: requisition_versions.submitted_by_membership_id > organization_memberships.membership_id
+Ref: requisition_reviews.requisition_id > job_requisitions.requisition_id
+Ref: requisition_reviews.requisition_version_id > requisition_versions.requisition_version_id
+Ref: requisition_reviews.reviewed_by_membership_id > organization_memberships.membership_id
+Ref: requisition_version_stages.requisition_version_id > requisition_versions.requisition_version_id
+Ref: requisition_version_stage_sections.requisition_version_stage_id > requisition_version_stages.requisition_version_stage_id
+Ref: requisition_version_stage_questions.requisition_version_section_id > requisition_version_stage_sections.requisition_version_section_id
+Ref: requisition_version_stage_question_options.requisition_version_question_id > requisition_version_stage_questions.requisition_version_question_id
+Ref: requisition_version_interview_criteria.requisition_version_stage_id > requisition_version_stages.requisition_version_stage_id
+Ref: job_openings.organization_id > organizations.organization_id
+Ref: job_openings.created_by_membership_id > organization_memberships.membership_id
+Ref: job_openings.requisition_id > job_requisitions.requisition_id
+Ref: job_openings.active_opening_version_id > opening_versions.opening_version_id
+Ref: opening_versions.job_opening_id > job_openings.job_opening_id
+Ref: opening_versions.requisition_version_id > requisition_versions.requisition_version_id
+Ref: opening_versions.based_on_opening_version_id > opening_versions.opening_version_id
+Ref: opening_versions.submitted_by_membership_id > organization_memberships.membership_id
+Ref: opening_version_reviews.opening_version_id > opening_versions.opening_version_id
+Ref: opening_version_reviews.reviewed_by_membership_id > organization_memberships.membership_id
+Ref: job_opening_stages.job_opening_id > job_openings.job_opening_id
+Ref: job_opening_stages.opening_version_id > opening_versions.opening_version_id
+Ref: stage_sections.stage_id > job_opening_stages.stage_id
+Ref: stage_questions.section_id > stage_sections.section_id
+Ref: stage_question_options.question_id > stage_questions.question_id
+Ref: interview_criteria.stage_id > job_opening_stages.stage_id
+Ref: opening_stage_interviewer_nominations.opening_version_id > opening_versions.opening_version_id
+Ref: opening_stage_interviewer_nominations.stage_id > job_opening_stages.stage_id
+Ref: opening_stage_interviewer_nominations.interviewer_membership_id > organization_memberships.membership_id
+Ref: opening_stage_interviewer_nominations.hr_reviewed_by_membership_id > organization_memberships.membership_id
+Ref: opening_stage_interviewer_nominations.replaced_by_nomination_id > opening_stage_interviewer_nominations.nomination_id
+Ref: opening_stage_interviewer_nominations.created_by_membership_id > organization_memberships.membership_id
+Ref: organization_member_roles.membership_id > organization_memberships.membership_id
+Ref: organization_member_roles.job_opening_id > job_openings.job_opening_id
+Ref: organization_member_roles.source_nomination_id > opening_stage_interviewer_nominations.nomination_id
+Ref: applicant_profiles.canonical_person_id > canonical_people.canonical_person_id
+Ref: job_applications.job_opening_id > job_openings.job_opening_id
+Ref: job_applications.keycloak_user_id > users.keycloak_user_id
+Ref: job_applications.current_stage_id > job_opening_stages.stage_id
+Ref: job_applications.opening_version_id > opening_versions.opening_version_id
+Ref: job_applications.canonical_person_id > canonical_people.canonical_person_id
+Ref: job_applications.replaces_application_id > job_applications.application_id
+Ref: application_documents.application_id > job_applications.application_id
+Ref: stage_attempts.application_id > job_applications.application_id
+Ref: stage_attempts.stage_id > job_opening_stages.stage_id
+Ref: stage_attempts.opening_version_id > opening_versions.opening_version_id
+Ref: candidate_responses.attempt_id > stage_attempts.attempt_id
+Ref: candidate_responses.question_id > stage_questions.question_id
+Ref: candidate_responses.selected_option_id > stage_question_options.option_id
+Ref: candidate_responses.active_media_recording_id > candidate_response_media_versions.media_recording_id
+Ref: candidate_response_media_versions.response_id > candidate_responses.response_id
+Ref: candidate_response_media_versions.attempt_id > stage_attempts.attempt_id
+Ref: ai_stage_evaluations.attempt_id > stage_attempts.attempt_id
+Ref: ai_stage_evaluations.input_document_id > application_documents.application_document_id
+Ref: ai_stage_evaluations.retry_of_evaluation_id > ai_stage_evaluations.evaluation_id
+Ref: ai_evaluation_areas.evaluation_id > ai_stage_evaluations.evaluation_id
+Ref: voice_integrity_checks.attempt_id > stage_attempts.attempt_id
+Ref: voice_integrity_checks.resolved_by_membership_id > organization_memberships.membership_id
+Ref: stage_results.application_id > job_applications.application_id
+Ref: stage_results.stage_id > job_opening_stages.stage_id
+Ref: stage_results.attempt_id > stage_attempts.attempt_id
+Ref: hr_decisions.application_id > job_applications.application_id
+Ref: hr_decisions.stage_id > job_opening_stages.stage_id
+Ref: hr_decisions.decided_by_membership_id > organization_memberships.membership_id
+Ref: hr_decisions.ai_evaluation_id > ai_stage_evaluations.evaluation_id
+Ref: hr_decision_internal_notes.decision_id > hr_decisions.decision_id
+Ref: hr_decision_internal_notes.author_membership_id > organization_memberships.membership_id
+Ref: hr_decision_status_messages.decision_id > hr_decisions.decision_id
+Ref: pre_screen_decision_batches.organization_id > organizations.organization_id
+Ref: pre_screen_decision_batches.job_opening_id > job_openings.job_opening_id
+Ref: pre_screen_decision_batches.opening_version_id > opening_versions.opening_version_id
+Ref: pre_screen_decision_batches.stage_id > job_opening_stages.stage_id
+Ref: pre_screen_decision_batches.initiated_by_membership_id > organization_memberships.membership_id
+Ref: pre_screen_decision_batch_items.decision_batch_id > pre_screen_decision_batches.decision_batch_id
+Ref: pre_screen_decision_batch_items.application_id > job_applications.application_id
+Ref: pre_screen_decision_batch_items.hr_decision_id > hr_decisions.decision_id
+Ref: assessment_invitations.application_id > job_applications.application_id
+Ref: assessment_invitations.attempt_id > stage_attempts.attempt_id
+Ref: assessment_grievances.application_id > job_applications.application_id
+Ref: assessment_grievances.stage_id > job_opening_stages.stage_id
+Ref: assessment_grievances.attempt_id > stage_attempts.attempt_id
+Ref: assessment_grievances.decided_by_membership_id > organization_memberships.membership_id
+Ref: application_accommodations.application_id > job_applications.application_id
+Ref: application_accommodations.stage_id > job_opening_stages.stage_id
+Ref: application_accommodations.decided_by_membership_id > organization_memberships.membership_id
+Ref: stage_interviewers.application_id > job_applications.application_id
+Ref: stage_interviewers.stage_id > job_opening_stages.stage_id
+Ref: stage_interviewers.interviewer_membership_id > organization_memberships.membership_id
+Ref: stage_interviewers.attempt_id > stage_attempts.attempt_id
+Ref: stage_interviewers.replaced_by_stage_interviewer_id > stage_interviewers.stage_interviewer_id
+Ref: interview_results.criteria_id > interview_criteria.criteria_id
+Ref: interview_results.stage_interviewer_id > stage_interviewers.stage_interviewer_id
+Ref: hiring_manager_comments.application_id > job_applications.application_id
+Ref: hiring_manager_comments.stage_id > job_opening_stages.stage_id
+Ref: hiring_manager_comments.author_membership_id > organization_memberships.membership_id
+Ref: workflow_action_requests.requisition_id > job_requisitions.requisition_id
+Ref: workflow_action_requests.job_opening_id > job_openings.job_opening_id
+Ref: workflow_action_requests.application_id > job_applications.application_id
+Ref: workflow_action_requests.requested_by_membership_id > organization_memberships.membership_id
+Ref: workflow_action_requests.target_membership_id > organization_memberships.membership_id
+Ref: workflow_action_requests.responded_by_membership_id > organization_memberships.membership_id
+Ref: application_stage_transitions.application_id > job_applications.application_id
+Ref: application_stage_transitions.from_stage_id > job_opening_stages.stage_id
+Ref: application_stage_transitions.to_stage_id > job_opening_stages.stage_id
+Ref: application_stage_transitions.hr_decision_id > hr_decisions.decision_id
+Ref: application_stage_transitions.performed_by_membership_id > organization_memberships.membership_id
+Ref: application_selections.application_id > job_applications.application_id
+Ref: application_selections.selected_by_membership_id > organization_memberships.membership_id
+Ref: application_selections.offer_recorded_by_membership_id > organization_memberships.membership_id
+Ref: onboarding_records.selection_id > application_selections.selection_id
+Ref: onboarding_records.updated_by_membership_id > organization_memberships.membership_id
+Ref: position_fills.job_opening_id > job_openings.job_opening_id
+Ref: position_fills.application_id > job_applications.application_id
+Ref: position_fills.selection_id > application_selections.selection_id
+Ref: position_fills.filled_by_membership_id > organization_memberships.membership_id
+Ref: legal_holds.organization_id > organizations.organization_id
+Ref: legal_holds.application_id > job_applications.application_id
+Ref: legal_holds.placed_by_membership_id > organization_memberships.membership_id
+Ref: legal_holds.released_by_membership_id > organization_memberships.membership_id
+Ref: notification_outbox.organization_id > organizations.organization_id
+Ref: notification_outbox.sender_membership_id > organization_memberships.membership_id
+Ref: audit_events.organization_id > organizations.organization_id
+Ref: audit_events.actor_membership_id > organization_memberships.membership_id
