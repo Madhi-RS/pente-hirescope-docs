@@ -1,0 +1,525 @@
+No	Table				
+1	pente_workspace				
+	Column	Purpose	PK	FK	Data Type
+	workspace_id	The fixed Pente workspace scope	PK	-	UUID
+	steward_business_id	Authoritative Steward business identifier	-	-	VARCHAR(255)
+	status	ACTIVE or DISABLED	-	-	VARCHAR(20)
+	created_at	Workspace audit time	-	-	TIMESTAMPTZ
+
+2	staff_directory_projection				
+	Column	Purpose	PK	FK	Data Type
+	staff_id	HireScope reference to a Steward person	PK	-	UUID
+	workspace_id	Fixed Pente scope	-	FK -> pente_workspace.workspace_id	UUID
+	steward_person_id	Authoritative Steward person identifier	-	-	VARCHAR(255)
+	display_name	Current directory display name	-	-	VARCHAR(255)
+	unit_id	Current Steward unit reference	-	-	VARCHAR(255)
+	manager_steward_person_id	Current Steward manager reference	-	-	VARCHAR(255)
+	synchronized_at	Last authorised directory read	-	-	TIMESTAMPTZ
+
+3	member_access_projection				
+	Column	Purpose	PK	FK	Data Type
+	membership_id	Pente member access projection	PK	-	UUID
+	staff_id	Member identity	-	FK -> staff_directory_projection.staff_id	UUID
+	steward_role_id	Authoritative Steward module-role reference	-	-	VARCHAR(255)
+	membership_status	ACTIVE, INACTIVE, or REVOKED	-	-	VARCHAR(20)
+	effective_at	Role or membership effective time	-	-	TIMESTAMPTZ
+	reason	Required lifecycle reason where applicable	-	-	TEXT
+
+4	workflow_role_assignments				
+	Column	Purpose	PK	FK	Data Type
+	assignment_id	Scoped recruitment-role assignment	PK	-	UUID
+	membership_id	Assigned staff member	-	FK -> member_access_projection.membership_id	UUID
+	role	ORGANISATION_OWNER, ORGANISATION_ADMIN, HR, HIRING_MANAGER, HIRING_REVIEWER, HIRING_APPROVER, or INTERVIEWER	-	-	VARCHAR(40)
+	scope_type	WORKSPACE, REQUISITION, OPENING, STAGE, or APPLICATION	-	-	VARCHAR(30)
+	scope_id	Relevant workflow object	-	-	UUID
+	assigned_by_membership_id	Authorised assigning admin	-	FK -> member_access_projection.membership_id	UUID
+	assignment_reason	Required reason for reviewer or approver changes	-	-	TEXT
+	status	ACTIVE or REVOKED	-	-	VARCHAR(20)
+	steward_event_id	Role-change event correlation	-	-	VARCHAR(255)
+
+5	recruitment_access_requests				
+	Column	Purpose	PK	FK	Data Type
+	access_request_id	Organisation-level access request	PK	-	UUID
+	requester_membership_id	Member requesting access	-	FK -> member_access_projection.membership_id	UUID
+	requested_role	Requested HR or Hiring Manager role	-	-	VARCHAR(40)
+	reviewed_by_membership_id	Organisation Admin or Steward admin	-	FK -> member_access_projection.membership_id	UUID
+	status	PENDING, APPROVED, REJECTED, or REVOKED	-	-	VARCHAR(20)
+	reason	Decision or revocation reason	-	-	TEXT
+	steward_task_id	Ask correlation when an ask is used	-	-	VARCHAR(255)
+
+6	recruitment_policy_versions				
+	Column	Purpose	PK	FK	Data Type
+	policy_version_id	Immutable Owner policy version	PK	-	UUID
+	workspace_id	Fixed Pente scope	-	FK -> pente_workspace.workspace_id	UUID
+	policy_type	WORKFLOW_GUARDRAIL, DELIVERY, CONSENT, RETENTION, or LEGAL_HOLD	-	-	VARCHAR(40)
+	policy_body	Versioned settings, stages, rubrics, timing, and allowed modes	-	-	JSONB
+	created_by_membership_id	Organisation Owner	-	FK -> member_access_projection.membership_id	UUID
+	status	DRAFT, ACTIVE, or RETIRED	-	-	VARCHAR(20)
+	created_at	Version creation time	-	-	TIMESTAMPTZ
+
+7	requisition_templates				
+	Column	Purpose	PK	FK	Data Type
+	template_id	Reusable Owner-approved requisition template	PK	-	UUID
+	policy_version_id	Guardrail policy that owns the template	-	FK -> recruitment_policy_versions.policy_version_id	UUID
+	template_name	Human-readable template name	-	-	VARCHAR(150)
+	template_body	Default stages, evidence areas, weights, and limits	-	-	JSONB
+	active	Whether the template may be used for new requisitions	-	-	BOOLEAN
+
+8	job_requisitions				
+	Column	Purpose	PK	FK	Data Type
+	requisition_id	Hiring request	PK	-	UUID
+	created_by_membership_id	Hiring Manager creator	-	FK -> member_access_projection.membership_id	UUID
+	template_id	Approved template used for the request	-	FK -> requisition_templates.template_id	UUID
+	current_version_id	Current immutable requisition version	-	FK -> requisition_versions.requisition_version_id	UUID
+	status	DRAFT, IN_REVIEW, RETURNED, APPROVED, or WITHDRAWN	-	-	VARCHAR(20)
+	approved_budget_amount	Budget used by the mandatory pre-offer gate	-	-	NUMERIC(12,2)
+	seniority_flag	Whether the senior-role gate applies	-	-	BOOLEAN
+	created_at	Lifecycle audit time	-	-	TIMESTAMPTZ
+
+9	requisition_versions				
+	Column	Purpose	PK	FK	Data Type
+	requisition_version_id	Immutable submitted requisition version	PK	-	UUID
+	requisition_id	Parent requisition	-	FK -> job_requisitions.requisition_id	UUID
+	version_number	Monotonic resubmission number	-	-	INTEGER
+	job_definition	Role, headcount, criteria, and budget snapshot	-	-	JSONB
+	configuration	Pinned assessment, interview, and verification policy snapshot	-	-	JSONB
+	submitted_by_membership_id	Submitting Hiring Manager	-	FK -> member_access_projection.membership_id	UUID
+	submitted_at	Submission time	-	-	TIMESTAMPTZ
+
+10	requisition_reviews				
+	Column	Purpose	PK	FK	Data Type
+	requisition_review_id	Reviewer recommendation for a requisition version	PK	-	UUID
+	requisition_version_id	Reviewed version	-	FK -> requisition_versions.requisition_version_id	UUID
+	recommendation_id	Immutable reviewer recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver decision	-	FK -> workflow_decisions.decision_id	UUID
+	steward_task_id	Reviewer task or ask correlation	-	-	VARCHAR(255)
+
+11	job_openings				
+	Column	Purpose	PK	FK	Data Type
+	opening_id	Opening created from an approved requisition	PK	-	UUID
+	requisition_id	Approved parent requisition	-	FK -> job_requisitions.requisition_id	UUID
+	created_by_membership_id	Opening creator	-	FK -> member_access_projection.membership_id	UUID
+	active_version_id	Approved opening version	-	FK -> opening_versions.opening_version_id	UUID
+	target_headcount	Approved capacity	-	-	INTEGER
+	status	DRAFT, IN_REVIEW, APPROVED, PUBLISHED, SUSPENDED, CLOSED, or HISTORICAL	-	-	VARCHAR(20)
+
+12	opening_versions				
+	Column	Purpose	PK	FK	Data Type
+	opening_version_id	Immutable opening configuration version	PK	-	UUID
+	opening_id	Parent opening	-	FK -> job_openings.opening_id	UUID
+	requisition_version_id	Approved requisition version inherited by the opening	-	FK -> requisition_versions.requisition_version_id	UUID
+	version_number	Version sequence	-	-	INTEGER
+	posting_definition	Channel, public page, role, and operational posting fields	-	-	JSONB
+	status	DRAFT, IN_REVIEW, RETURNED, APPROVED, or PUBLISHED	-	-	VARCHAR(20)
+
+13	opening_stages				
+	Column	Purpose	PK	FK	Data Type
+	stage_id	Version-pinned opening stage	PK	-	UUID
+	opening_version_id	Owning opening version	-	FK -> opening_versions.opening_version_id	UUID
+	stage_order	Authorised stage order	-	-	INTEGER
+	stage_type	PRE_SCREEN, ASSESSMENT, LIVE_INTERVIEW, or other Owner-approved type	-	-	VARCHAR(40)
+	configuration	Questions, rubric, timing, attempts, consent, and recording rules	-	-	JSONB
+
+14	opening_panel_nominations				
+	Column	Purpose	PK	FK	Data Type
+	nomination_id	Proposed stage-specific interviewer	PK	-	UUID
+	opening_version_id	Opening version under review	-	FK -> opening_versions.opening_version_id	UUID
+	stage_id	Stage-specific assignment	-	FK -> opening_stages.stage_id	UUID
+	interviewer_membership_id	Eligible existing member	-	FK -> member_access_projection.membership_id	UUID
+	nominated_by_membership_id	Hiring Manager nominator	-	FK -> member_access_projection.membership_id	UUID
+	eligibility_status	PENDING, ELIGIBLE, CONFLICT, or INELIGIBLE	-	-	VARCHAR(20)
+	recommendation_id	Reviewer eligibility/conflict recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver panel decision	-	FK -> workflow_decisions.decision_id	UUID
+
+15	opening_control_requests				
+	Column	Purpose	PK	FK	Data Type
+	control_request_id	Suspension, reactivation, or closure request	PK	-	UUID
+	opening_id	Affected opening	-	FK -> job_openings.opening_id	UUID
+	requested_by_membership_id	Hiring Reviewer requester	-	FK -> member_access_projection.membership_id	UUID
+	action	SUSPEND, REACTIVATE, or CLOSE	-	-	VARCHAR(20)
+	recommendation_id	Reviewer recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver decision	-	FK -> workflow_decisions.decision_id	UUID
+	executed_by_membership_id	Creator who executes the approved action	-	FK -> member_access_projection.membership_id	UUID
+	reason	Required request and decision reason	-	-	TEXT
+
+16	applicants				
+	Column	Purpose	PK	FK	Data Type
+	applicant_id	Candidate identity in the recruitment domain	PK	-	UUID
+	steward_identity_id	Approved external identity or guest reference	-	-	VARCHAR(255)
+	contact_data	Applicant-provided contact data	-	-	JSONB
+	created_at	Identity creation time	-	-	TIMESTAMPTZ
+
+17	applicant_workspace_contexts				
+	Column	Purpose	PK	FK	Data Type
+	context_id	Applicant-selected workspace context	PK	-	UUID
+	applicant_id	Applicant who selected the context	-	FK -> applicants.applicant_id	UUID
+	workspace_id	Fixed Pente workspace	-	FK -> pente_workspace.workspace_id	UUID
+	status	ACTIVE or REVOKED	-	-	VARCHAR(20)
+
+18	job_applications				
+	Column	Purpose	PK	FK	Data Type
+	application_id	Application to a published opening	PK	-	UUID
+	applicant_id	Applicant	-	FK -> applicants.applicant_id	UUID
+	opening_id	Published opening	-	FK -> job_openings.opening_id	UUID
+	opening_version_id	Pinned published version	-	FK -> opening_versions.opening_version_id	UUID
+	current_stage_id	Current authorised stage	-	FK -> opening_stages.stage_id	UUID
+	status	SUBMITTED, IN_PROGRESS, ON_HOLD, WITHDRAWN, NOT_SELECTED, SELECTED_PENDING, OFFERED, or CLOSED	-	-	VARCHAR(30)
+	retest_eligible_at	Future eligibility date only after an approved exception	-	-	TIMESTAMPTZ
+	applied_at	Submission timestamp	-	-	TIMESTAMPTZ
+
+19	application_documents				
+	Column	Purpose	PK	FK	Data Type
+	document_id	Private application document	PK	-	UUID
+	application_id	Owning application	-	FK -> job_applications.application_id	UUID
+	document_type	RESUME, PORTFOLIO, CONSENT, OFFER, or configured document type	-	-	VARCHAR(40)
+	storage_key	Private object-storage reference	-	-	TEXT
+	content_hash	Integrity hash	-	-	VARCHAR(128)
+	retention_status	ACTIVE, HELD, or DELETED	-	-	VARCHAR(20)
+
+20	application_duplicate_reviews				
+	Column	Purpose	PK	FK	Data Type
+	duplicate_review_id	Duplicate/link/merge/cancellation assessment	PK	-	UUID
+	application_id	Application under review	-	FK -> job_applications.application_id	UUID
+	related_application_id	Potential duplicate	-	FK -> job_applications.application_id	UUID
+	recommendation_id	Reviewer recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver merge or cancellation decision	-	FK -> workflow_decisions.decision_id	UUID
+
+21	application_resume_facts				
+	Column	Purpose	PK	FK	Data Type
+	fact_id	Extracted resume fact	PK	-	UUID
+	application_id	Application evidence source	-	FK -> job_applications.application_id	UUID
+	source_document_id	Resume or approved document	-	FK -> application_documents.document_id	UUID
+	fact_data	Extracted fact and source span	-	-	JSONB
+	validated_by_membership_id	Hiring Reviewer who validated the fact	-	FK -> member_access_projection.membership_id	UUID
+
+22	stage_attempts				
+	Column	Purpose	PK	FK	Data Type
+	attempt_id	Permitted assessment or interview attempt	PK	-	UUID
+	application_id	Applicant application	-	FK -> job_applications.application_id	UUID
+	stage_id	Configured stage	-	FK -> opening_stages.stage_id	UUID
+	attempt_number	Sequential permitted attempt number	-	-	INTEGER
+	deadline_at	Submission deadline	-	-	TIMESTAMPTZ
+	readiness_status	PENDING, READY, or NOT_READY	-	-	VARCHAR(20)
+	consent_status	PENDING, GRANTED, REFUSED, or WITHDRAWN	-	-	VARCHAR(20)
+	status	INVITED, STARTED, SUBMITTED, LOCKED, EXPIRED, or CANCELLED	-	-	VARCHAR(20)
+
+23	assessment_invitations				
+	Column	Purpose	PK	FK	Data Type
+	invitation_id	Approved assessment invitation	PK	-	UUID
+	attempt_id	Enabled attempt	-	FK -> stage_attempts.attempt_id	UUID
+	decision_id	Approver stage decision enabling the invitation	-	FK -> workflow_decisions.decision_id	UUID
+	message_id	Approved communication record	-	FK -> notification_outbox.notification_id	UUID
+	status	PENDING, SENT, OPENED, EXPIRED, or FAILED	-	-	VARCHAR(20)
+
+24	application_accommodations				
+	Column	Purpose	PK	FK	Data Type
+	accommodation_id	Restricted accommodation request	PK	-	UUID
+	application_id	Requesting application	-	FK -> job_applications.application_id	UUID
+	stage_id	Affected stage	-	FK -> opening_stages.stage_id	UUID
+	request_detail	Restricted request detail	-	-	TEXT
+	implementation_instruction	Minimum instruction disclosed to the interviewer	-	-	TEXT
+	recommendation_id	Reviewer assessment	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver decision	-	FK -> workflow_decisions.decision_id	UUID
+
+25	assessment_grievances				
+	Column	Purpose	PK	FK	Data Type
+	grievance_id	Timely no-response or technical-interruption grievance	PK	-	UUID
+	application_id	Affected application	-	FK -> job_applications.application_id	UUID
+	attempt_id	Affected attempt	-	FK -> stage_attempts.attempt_id	UUID
+	grievance_type	NO_RESPONSE or TECHNICAL_INTERRUPTION	-	-	VARCHAR(40)
+	submitted_at	Applicant submission time	-	-	TIMESTAMPTZ
+	recommendation_id	Reviewer assessment for a discretionary exception	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver reattempt or retest decision	-	FK -> workflow_decisions.decision_id	UUID
+
+26	candidate_responses				
+	Column	Purpose	PK	FK	Data Type
+	response_id	Applicant response	PK	-	UUID
+	attempt_id	Owning stage attempt	-	FK -> stage_attempts.attempt_id	UUID
+	question_key	Pinned configuration question reference	-	-	VARCHAR(255)
+	response_data	Text, selected answer, or approved response metadata	-	-	JSONB
+	locked_at	Final response lock time	-	-	TIMESTAMPTZ
+
+27	candidate_response_media				
+	Column	Purpose	PK	FK	Data Type
+	media_id	Approved audio response artefact	PK	-	UUID
+	response_id	Parent response	-	FK -> candidate_responses.response_id	UUID
+	storage_key	Private media storage reference	-	-	TEXT
+	transcript	Generated transcript where permitted	-	-	TEXT
+	recording_status	RECORDED, SUBMITTED, or DELETED	-	-	VARCHAR(20)
+
+28	ai_advisories				
+	Column	Purpose	PK	FK	Data Type
+	advisory_id	Immutable advisory AI output	PK	-	UUID
+	application_id	Relevant application	-	FK -> job_applications.application_id	UUID
+	attempt_id	Relevant attempt when applicable	-	FK -> stage_attempts.attempt_id	UUID
+	advisory_type	RESUME_FACTS, RELEVANCE, EVIDENCE, SUMMARY, or DRAFT	-	-	VARCHAR(30)
+	result_data	Advisory output and evidence references	-	-	JSONB
+	steward_completion_id	Metered Steward AI gateway correlation	-	-	VARCHAR(255)
+	status	COMPLETED or FAILED	-	-	VARCHAR(20)
+
+29	integrity_flags				
+	Column	Purpose	PK	FK	Data Type
+	flag_id	Possible scripted-delivery or integrity flag	PK	-	UUID
+	attempt_id	Affected attempt	-	FK -> stage_attempts.attempt_id	UUID
+	advisory_id	Source advisory where applicable	-	FK -> ai_advisories.advisory_id	UUID
+	flag_data	Flag rationale and evidence reference	-	-	JSONB
+	recommendation_id	Reviewer assessment	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver permitted follow-up decision	-	FK -> workflow_decisions.decision_id	UUID
+
+30	workflow_recommendations				
+	Column	Purpose	PK	FK	Data Type
+	recommendation_id	Immutable Hiring Reviewer record	PK	-	UUID
+	subject_type	REQUISITION, OPENING, APPLICATION, OFFER, VERIFICATION, or ONBOARDING	-	-	VARCHAR(30)
+	subject_id	Reviewed business object	-	-	UUID
+	reviewed_by_membership_id	Hiring Reviewer	-	FK -> member_access_projection.membership_id	UUID
+	recommendation	RECOMMEND, RETURN, NOT_RECOMMEND, or configured outcome	-	-	VARCHAR(40)
+	rationale	Evidence-based reviewer rationale	-	-	TEXT
+	steward_task_id	Steward task or ask correlation	-	-	VARCHAR(255)
+	created_at	Immutable record time	-	-	TIMESTAMPTZ
+
+31	workflow_decisions				
+	Column	Purpose	PK	FK	Data Type
+	decision_id	Immutable Hiring Approver or authorised system decision	PK	-	UUID
+	subject_type	Business object type	-	-	VARCHAR(30)
+	subject_id	Decision target	-	-	UUID
+	recommendation_id	Required reviewer record except configured automatic cancellation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decided_by_membership_id	Hiring Approver or authorised policy executor	-	FK -> member_access_projection.membership_id	UUID
+	decision	APPROVE, RETURN, REJECT, ADVANCE, HOLD, INVITE, SELECT, DECLINE, CANCEL, or EXCEPTION	-	-	VARCHAR(40)
+	reason	Required decision reason where policy requires	-	-	TEXT
+	steward_proposal_id	Steward proposal or ask correlation	-	-	VARCHAR(255)
+	decided_at	Decision time	-	-	TIMESTAMPTZ
+
+32	application_stage_transitions				
+	Column	Purpose	PK	FK	Data Type
+	transition_id	Immutable application state transition	PK	-	UUID
+	application_id	Application whose state changed	-	FK -> job_applications.application_id	UUID
+	from_status	Previous state	-	-	VARCHAR(30)
+	to_status	New state	-	-	VARCHAR(30)
+	decision_id	Authorising decision when required	-	FK -> workflow_decisions.decision_id	UUID
+	policy_version_id	Policy authorising a rule-based transition	-	FK -> recruitment_policy_versions.policy_version_id	UUID
+	actor_membership_id	Human actor; null only for authorised system policy	-	FK -> member_access_projection.membership_id	UUID
+	reason_code	Mandatory for automatic cancellation and exception paths	-	-	VARCHAR(80)
+	occurred_at	Transition time	-	-	TIMESTAMPTZ
+
+33	hiring_manager_comments				
+	Column	Purpose	PK	FK	Data Type
+	comment_id	Separate non-decision Hiring Manager comment	PK	-	UUID
+	application_id	Applicant under discussion	-	FK -> job_applications.application_id	UUID
+	stage_id	Released stage context	-	FK -> opening_stages.stage_id	UUID
+	author_membership_id	Assigned Hiring Manager	-	FK -> member_access_projection.membership_id	UUID
+	comment	Observation only	-	-	TEXT
+	created_at	Comment time	-	-	TIMESTAMPTZ
+
+34	live_interview_schedules				
+	Column	Purpose	PK	FK	Data Type
+	schedule_id	Approved live-interview schedule	PK	-	UUID
+	application_id	Interviewed application	-	FK -> job_applications.application_id	UUID
+	stage_id	Live-interview stage	-	FK -> opening_stages.stage_id	UUID
+	decision_id	Approver stage-eligibility decision	-	FK -> workflow_decisions.decision_id	UUID
+	scheduled_by_membership_id	Hiring Manager scheduler	-	FK -> member_access_projection.membership_id	UUID
+	start_at	Scheduled time	-	-	TIMESTAMPTZ
+	calendar_reference	Approved calendar integration reference	-	-	VARCHAR(255)
+
+35	stage_interviewer_assignments				
+	Column	Purpose	PK	FK	Data Type
+	assignment_id	Application and stage-scoped interviewer assignment	PK	-	UUID
+	application_id	Application	-	FK -> job_applications.application_id	UUID
+	stage_id	Assigned stage	-	FK -> opening_stages.stage_id	UUID
+	interviewer_membership_id	Assigned interviewer	-	FK -> member_access_projection.membership_id	UUID
+	nomination_id	Approved panel nomination	-	FK -> opening_panel_nominations.nomination_id	UUID
+	status	ACTIVE, SUBMITTED, EXPIRED, REPLACED, or REVOKED	-	-	VARCHAR(20)
+	expires_at	Assignment expiry	-	-	TIMESTAMPTZ
+
+36	interviewer_evaluations				
+	Column	Purpose	PK	FK	Data Type
+	evaluation_id	Independent interviewer evaluation	PK	-	UUID
+	assignment_id	Scoped interviewer assignment	-	FK -> stage_interviewer_assignments.assignment_id	UUID
+	evaluation_data	Rubric scores and rationale	-	-	JSONB
+	status	DRAFT or SUBMITTED	-	-	VARCHAR(20)
+	submitted_at	Evaluation lock time	-	-	TIMESTAMPTZ
+
+37	selection_reservations				
+	Column	Purpose	PK	FK	Data Type
+	selection_id	Final selected-candidate and capacity reservation	PK	-	UUID
+	application_id	Selected application	-	FK -> job_applications.application_id	UUID
+	decision_id	Final selection decision	-	FK -> workflow_decisions.decision_id	UUID
+	opening_id	Opening whose capacity is reserved	-	FK -> job_openings.opening_id	UUID
+	status	RESERVED, RELEASED, or CONSUMED	-	-	VARCHAR(20)
+	reserved_at	Reservation time	-	-	TIMESTAMPTZ
+	released_at	Release time	-	-	TIMESTAMPTZ
+
+38	offer_records				
+	Column	Purpose	PK	FK	Data Type
+	offer_id	Candidate-specific offer lifecycle	PK	-	UUID
+	selection_id	Selected candidate	-	FK -> selection_reservations.selection_id	UUID
+	pre_offer_decision_id	Mandatory budget and senior-role gate	-	FK -> workflow_decisions.decision_id	UUID
+	status	DRAFT, IN_REVIEW, APPROVED, SENT, ACCEPTED, DECLINED, WITHDRAWN, CANCELLED, or EXPIRED	-	-	VARCHAR(20)
+	expires_at	Candidate response deadline	-	-	TIMESTAMPTZ
+
+39	offer_versions				
+	Column	Purpose	PK	FK	Data Type
+	offer_version_id	Versioned offer content	PK	-	UUID
+	offer_id	Parent offer	-	FK -> offer_records.offer_id	UUID
+	version_number	Offer content version	-	-	INTEGER
+	offer_data	Role, compensation, terms, joining date, and template version	-	-	JSONB
+	recommendation_id	Reviewer recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver content decision	-	FK -> workflow_decisions.decision_id	UUID
+	sealed_document_id	Approved final offer document	-	FK -> application_documents.document_id	UUID
+
+40	offer_responses				
+	Column	Purpose	PK	FK	Data Type
+	offer_response_id	Candidate-recorded offer outcome	PK	-	UUID
+	offer_id	Offer acted on	-	FK -> offer_records.offer_id	UUID
+	response	ACCEPTED, DECLINED, or WITHDRAWN	-	-	VARCHAR(20)
+	responded_at	Outcome time	-	-	TIMESTAMPTZ
+	company_withdrawal_decision_id	Approver decision for company withdrawal only	-	FK -> workflow_decisions.decision_id	UUID
+
+41	background_verification_cases				
+	Column	Purpose	PK	FK	Data Type
+	verification_case_id	Post-acceptance verification case	PK	-	UUID
+	offer_id	Accepted offer	-	FK -> offer_records.offer_id	UUID
+	consent_document_id	Permitted post-acceptance consent	-	FK -> application_documents.document_id	UUID
+	provider	Configured provider, including SpringVerify when confirmed	-	-	VARCHAR(80)
+	provider_case_id	Provider correlation identifier	-	-	VARCHAR(255)
+	status	PENDING_CONSENT, REQUESTED, RECEIVED, REVIEWED, or CLOSED	-	-	VARCHAR(30)
+
+42	background_verification_results				
+	Column	Purpose	PK	FK	Data Type
+	verification_result_id	Restricted provider result	PK	-	UUID
+	verification_case_id	Parent verification case	-	FK -> background_verification_cases.verification_case_id	UUID
+	result_data	Minimum permitted result data	-	-	JSONB
+	recommendation_id	Reviewer recommendation	-	FK -> workflow_recommendations.recommendation_id	UUID
+	decision_id	Approver permitted action or exception	-	FK -> workflow_decisions.decision_id	UUID
+	received_at	Result receipt time	-	-	TIMESTAMPTZ
+
+43	onboarding_cases				
+	Column	Purpose	PK	FK	Data Type
+	onboarding_id	One recruitment-side onboarding case	PK	-	UUID
+	selection_id	Selected candidate	-	FK -> selection_reservations.selection_id	UUID
+	verification_case_id	Verification gate when required	-	FK -> background_verification_cases.verification_case_id	UUID
+	external_reference	Accepted onboarding-module or manual handoff reference	-	-	VARCHAR(255)
+	status	PENDING, ACTIVE, COMPLETED, FAILED, or CANCELLED	-	-	VARCHAR(20)
+	created_at	Case creation time	-	-	TIMESTAMPTZ
+
+44	onboarding_tasks				
+	Column	Purpose	PK	FK	Data Type
+	onboarding_task_id	Linked onboarding work item	PK	-	UUID
+	onboarding_id	Parent onboarding case	-	FK -> onboarding_cases.onboarding_id	UUID
+	owner_membership_id	Assigned HR, IT, or business owner	-	FK -> member_access_projection.membership_id	UUID
+	steward_task_id	Steward task or proposal-plan reference	-	-	VARCHAR(255)
+	status	PENDING, IN_PROGRESS, COMPLETED, or EXCEPTION	-	-	VARCHAR(20)
+	exception_decision_id	Approver or authorised onboarding-owner exception	-	FK -> workflow_decisions.decision_id	UUID
+
+45	account_activation_requests				
+	Column	Purpose	PK	FK	Data Type
+	activation_request_id	Secure work-account activation request	PK	-	UUID
+	onboarding_id	Parent onboarding case	-	FK -> onboarding_cases.onboarding_id	UUID
+	organisation_admin_membership_id	Organisation Admin identity owner	-	FK -> member_access_projection.membership_id	UUID
+	it_owner_membership_id	IT provisioning owner	-	FK -> member_access_projection.membership_id	UUID
+	status	REQUESTED, PROVISIONED, ACTIVATED, FAILED, or CANCELLED	-	-	VARCHAR(20)
+	activation_reference	External activation reference; never a password	-	-	VARCHAR(255)
+
+46	employment_profiles				
+	Column	Purpose	PK	FK	Data Type
+	employment_profile_id	Limited employee record after completed onboarding	PK	-	UUID
+	onboarding_id	Completed onboarding source	-	FK -> onboarding_cases.onboarding_id	UUID
+	staff_id	Employee directory reference where available	-	FK -> staff_directory_projection.staff_id	UUID
+	profile_data	Approved employment fields only	-	-	JSONB
+	created_by_membership_id	HR creator	-	FK -> member_access_projection.membership_id	UUID
+	created_at	Profile creation time	-	-	TIMESTAMPTZ
+
+47	employment_profile_history				
+	Column	Purpose	PK	FK	Data Type
+	history_id	Approved employment-field change	PK	-	UUID
+	employment_profile_id	Profile changed	-	FK -> employment_profiles.employment_profile_id	UUID
+	changed_by_membership_id	HR editor	-	FK -> member_access_projection.membership_id	UUID
+	change_data	Provenance-preserving field change	-	-	JSONB
+	changed_at	Change time	-	-	TIMESTAMPTZ
+
+48	employment_document_references				
+	Column	Purpose	PK	FK	Data Type
+	employment_document_id	Verified employment-document link	PK	-	UUID
+	employment_profile_id	Employee profile	-	FK -> employment_profiles.employment_profile_id	UUID
+	document_id	Private document record	-	FK -> application_documents.document_id	UUID
+	linked_by_membership_id	Authorised records staff member	-	FK -> member_access_projection.membership_id	UUID
+	retention_policy_id	Applicable retention policy	-	FK -> retention_policies.retention_policy_id	UUID
+
+49	opening_capacity_ledger				
+	Column	Purpose	PK	FK	Data Type
+	capacity_entry_id	Transactional capacity movement	PK	-	UUID
+	opening_id	Opening capacity affected	-	FK -> job_openings.opening_id	UUID
+	selection_id	Reservation source where applicable	-	FK -> selection_reservations.selection_id	UUID
+	movement	RESERVE, RELEASE, or FILL	-	-	VARCHAR(20)
+	quantity	Capacity movement quantity	-	-	INTEGER
+	occurred_at	Locked movement time	-	-	TIMESTAMPTZ
+
+50	position_fills				
+	Column	Purpose	PK	FK	Data Type
+	position_fill_id	Completed onboarding position fill	PK	-	UUID
+	onboarding_id	Completed onboarding case	-	FK -> onboarding_cases.onboarding_id	UUID
+	opening_id	Filled opening	-	FK -> job_openings.opening_id	UUID
+	capacity_entry_id	FILL ledger entry	-	FK -> opening_capacity_ledger.capacity_entry_id	UUID
+	created_at	System fill creation time	-	-	TIMESTAMPTZ
+
+51	retention_policies				
+	Column	Purpose	PK	FK	Data Type
+	retention_policy_id	Owner-approved retention rule	PK	-	UUID
+	policy_version_id	Owning retention policy version	-	FK -> recruitment_policy_versions.policy_version_id	UUID
+	record_type	Record category covered	-	-	VARCHAR(60)
+	retention_days	Scheduled retention period	-	-	INTEGER
+	active	Whether the rule is active	-	-	BOOLEAN
+
+52	legal_holds				
+	Column	Purpose	PK	FK	Data Type
+	legal_hold_id	Legal hold overriding deletion	PK	-	UUID
+	scope_type	WORKSPACE, APPLICATION, OFFER, VERIFICATION, or EMPLOYMENT_PROFILE	-	-	VARCHAR(40)
+	scope_id	Held object	-	-	UUID
+	reason	Hold rationale	-	-	TEXT
+	placed_by_membership_id	Authorised legal or compliance user	-	FK -> member_access_projection.membership_id	UUID
+	status	ACTIVE or RELEASED	-	-	VARCHAR(20)
+
+53	retention_deletion_runs				
+	Column	Purpose	PK	FK	Data Type
+	deletion_run_id	Scheduled or authorised deletion execution	PK	-	UUID
+	retention_policy_id	Applied policy	-	FK -> retention_policies.retention_policy_id	UUID
+	scope_type	Deleted record category	-	-	VARCHAR(60)
+	scope_id	Deleted object	-	-	UUID
+	legal_hold_id	Blocking hold when deletion is deferred	-	FK -> legal_holds.legal_hold_id	UUID
+	steward_deletion_receipt_id	Steward deletion receipt correlation	-	-	VARCHAR(255)
+	status	DELETED, DEFERRED, or FAILED	-	-	VARCHAR(20)
+
+54	notification_outbox				
+	Column	Purpose	PK	FK	Data Type
+	notification_id	Transactional applicant or staff notification	PK	-	UUID
+	subject_type	Business object type	-	-	VARCHAR(40)
+	subject_id	Object being communicated	-	-	UUID
+	decision_id	Authorising decision where required	-	FK -> workflow_decisions.decision_id	UUID
+	channel	APPROVED_APPLICANT_CHANNEL, STEWARD_MESSAGE, or STEWARD_NOTICE	-	-	VARCHAR(40)
+	recipient_reference	Applicant, guest, or staff delivery reference	-	-	VARCHAR(255)
+	status	PENDING, APPROVED, SENT, FAILED, or RETRYING	-	-	VARCHAR(20)
+	attempt_count	Retry count	-	-	INTEGER
+	steward_message_id	Delivery correlation	-	-	VARCHAR(255)
+
+55	integration_operations				
+	Column	Purpose	PK	FK	Data Type
+	operation_id	Authorised AI, calendar, provider, or module operation	PK	-	UUID
+	subject_type	Business object type	-	-	VARCHAR(40)
+	subject_id	Affected object	-	-	UUID
+	operation_type	AI, CALENDAR, VERIFICATION, ONBOARDING, or MESSAGE	-	-	VARCHAR(40)
+	idempotency_key	Safe retry key	-	-	VARCHAR(255)
+	provider_reference	Steward or provider correlation	-	-	VARCHAR(255)
+	status	PENDING, SUCCEEDED, FAILED, or RETRYING	-	-	VARCHAR(20)
+	failure_data	Safe error and recovery context	-	-	JSONB
+
+56	audit_events				
+	Column	Purpose	PK	FK	Data Type
+	audit_event_id	Append-only sensitive-action and access audit	PK	-	UUID
+	workspace_id	Fixed Pente scope	-	FK -> pente_workspace.workspace_id	UUID
+	actor_membership_id	Human actor; null only for trusted system action	-	FK -> member_access_projection.membership_id	UUID
+	authority_role	Authority used for the action	-	-	VARCHAR(40)
+	subject_type	Audited object type	-	-	VARCHAR(40)
+	subject_id	Audited object	-	-	UUID
+	action	Action or denial	-	-	VARCHAR(80)
+	reason	Required business reason where applicable	-	-	TEXT
+	correlation_id	Steward, provider, notification, or workflow correlation	-	-	VARCHAR(255)
+	occurred_at	Immutable event time	-	-	TIMESTAMPTZ
